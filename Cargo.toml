@@ -1,11 +1,11 @@
 [package]
-name = "cargo-profile"
+name = "cargo-instrument"
 version = "0.1.0"
 authors = ["Colin Rofls <colin@cmyr.net>"]
 edition = "2018"
 
 [dependencies]
 chrono = "0.4.6"
-cargo = "*"
-failure = "*"
+cargo = "0.34.0"
+failure = "0.1.5"
 structopt = { version = "0.2", default-features = false }

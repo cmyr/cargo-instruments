@@ -1,3 +1,6 @@
-# cargo-profile
+# cargo-instruments
 
-Easily generate performance measurements for your rust project.
+Easily generate [Instruments] traces for your rust crate.
+
+
+[Instruments]: https://help.apple.com/instruments/mac/10.0/
