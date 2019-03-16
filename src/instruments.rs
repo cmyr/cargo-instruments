@@ -75,7 +75,6 @@ pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> R
 
     let status = Command::new("instruments")
         .args(&["-t", &template])
-        .args(&["-l", "5000"])
         .arg("-D")
         .arg(&outfile)
         .arg(&exec_path)
