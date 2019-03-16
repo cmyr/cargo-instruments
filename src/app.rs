@@ -1,7 +1,8 @@
 use cargo::core::Workspace;
 
-use crate::error::Error;
+//use crate::error::Error;
 use crate::opt::{Opts, Target};
+use failure::{Error, format_err};
 
 // RESCOPE:
 //
@@ -23,7 +24,7 @@ pub(crate) fn run(args: &Opts) -> Result<(), Error> {
     let cfg = cargo::util::config::Config::default()?;
     let path = cargo::util::important_paths::find_root_manifest_for_wd(cfg.cwd())?;
     let workspace = Workspace::new(&path, &cfg)?;
-    build_target(args, &workspace);
+    build_target(args, &workspace)?;
     //let current_name = ws.current().map(|p| p.manifest().name())?;
     Ok(())
 }
@@ -38,6 +39,7 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<(), Error> {
     let cargo_args = args.to_cargo_opts();
 
     validate_target(&cargo_args.target, workspace)?;
+    return Ok(());
 
     //TODO: verify that workspace contains a valid target
     let mut opts = CompileOptions::new(workspace.config(), CompileMode::Build)?;
@@ -50,7 +52,6 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<(), Error> {
 }
 
 fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> {
-    use cargo::core::manifest::TargetKind;
 
     let package = workspace.current()?;
     eprintln!("TARGETS: {:?}", &package.targets());
@@ -61,11 +62,10 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
         Target::Example(name) => targets.find(|t| t.is_example() && &t.name() == name).is_some(),
     };
     if !has_target {
-        Err(Error::Other("no target found".to_string()))
+        Err(format_err!("missing target {:?}", target))
     } else {
         Ok(())
     }
-
 }
 
 

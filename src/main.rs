@@ -1,17 +1,15 @@
 extern crate structopt;
 
-mod error;
 mod opt;
 mod app;
 
-use error::Error;
 use opt::{Cli, Opts};
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, ExitStatus};
 
-
+use failure::Error;
 use structopt::StructOpt;
 
 fn main() {
@@ -28,7 +26,7 @@ fn main() {
 fn run(args: Opts) -> Result<(), Error> {
     // do cargo build
 
-    app::run(&args).unwrap();
+    app::run(&args)?;
     //let exec_path = cargo_build(&args)?;
     //let exit_code = run_profiler(&exec_path, &args)?;
     //eprintln!("exited with {:?}", exit_code);

@@ -26,6 +26,7 @@ pub(crate) struct Opts {
     pub(crate) output: Option<PathBuf>,
 }
 
+#[derive(Debug, Clone)]
 pub(crate) enum Target {
     Main,
     Example(String),
