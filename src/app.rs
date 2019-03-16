@@ -1,8 +1,11 @@
+use std::path::PathBuf;
+
 use cargo::core::Workspace;
 use cargo::ops::CompileOptions;
 use cargo::util::config::Config;
 use failure::{format_err, Error};
 
+use crate::instruments;
 use crate::opt::{CargoOpts, Opts, Target};
 
 // RESCOPE:
@@ -19,19 +22,21 @@ use crate::opt::{CargoOpts, Opts, Target};
 //
 // allow building of a benchmark
 
-pub(crate) fn run(args: &Opts) -> Result<(), Error> {
-    eprintln!("opts: {:?}", args);
-    let cfg = cargo::util::config::Config::default()?;
-    let path = cargo::util::important_paths::find_root_manifest_for_wd(cfg.cwd())?;
-    let workspace = Workspace::new(&path, &cfg)?;
-    build_target(args, &workspace)?;
-    //let current_name = ws.current().map(|p| p.manifest().name())?;
-    Ok(())
+pub(crate) fn run(args: Opts) -> Result<(), Error> {
+    use cargo::util::important_paths::find_root_manifest_for_wd;
+
+    let cfg = Config::default()?;
+    let manifest_path = find_root_manifest_for_wd(cfg.cwd())?;
+    let workspace = Workspace::new(&manifest_path, &cfg)?;
+    let workspace_root = manifest_path.parent().unwrap().to_owned();
+
+    let exec_path = build_target(&args, &workspace)?;
+
+    instruments::run(&args, exec_path, workspace_root)
 }
 
-fn build_target(args: &Opts, workspace: &Workspace) -> Result<(), Error> {
+fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
     use cargo::core::shell::Verbosity;
-
     workspace.config().shell().set_verbosity(Verbosity::Normal);
 
     let cargo_args = args.to_cargo_opts();
@@ -39,10 +44,15 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<(), Error> {
     validate_target(&cargo_args.target, workspace)?;
 
     let opts = make_compile_opts(&cargo_args, workspace.config())?;
-    eprintln!("compie options: {:?}", &opts);
+
     let result = cargo::ops::compile(workspace, &opts)?;
     debug_compilation_result(&result);
-    Ok(())
+
+    match result.binaries.as_slice() {
+        [path] => Ok(path.clone()),
+        [] => Err(format_err!("no targets found")),
+        other => Err(format_err!("unexpectedly built multiple targets: {:?}", other)),
+    }
 }
 
 fn make_compile_opts<'a>(

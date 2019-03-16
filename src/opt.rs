@@ -24,6 +24,11 @@ pub(crate) struct Opts {
     /// Output file, stdout if not present
     #[structopt(short = "o", long = "out", parse(from_os_str))]
     pub(crate) output: Option<PathBuf>,
+
+    //TODO: remove me
+    /// development only flag.
+    #[structopt(long)]
+    pub(crate) ddebug: bool,
 }
 
 #[derive(Debug, PartialEq)]
