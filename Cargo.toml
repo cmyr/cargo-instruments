@@ -2,6 +2,13 @@
 name = "cargo-instruments"
 version = "0.1.0"
 authors = ["Colin Rofls <colin@cmyr.net>"]
+license = "MIT"
+description = "Generate Xcode Instruments trace files for binary targets."
+repository = "https://github.com/cmyr/cargo-instruments"
+documentation = "https://github.com/cmyr/cargo-instruments"
+categories = ["development-tools::cargo-plugins", "development-tools::profiling"]
+keywords = ["profiling", "xcode", "instruments", "macos"]
+readme = "README.md"
 edition = "2018"
 
 [dependencies]
