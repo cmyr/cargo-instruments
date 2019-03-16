@@ -8,19 +8,25 @@ pub(crate) enum Cli {
     Instrument(Opts),
 }
 
+/// Profile a binary with Xcode Instruments
 #[derive(Debug, StructOpt)]
 #[structopt(name = "cargo-instrument", about = "About cargo-instrument")]
 pub(crate) struct Opts {
-    /// macOS only, specify the template for instruments
-    #[structopt(short = "t", long)]
-    pub(crate) template: Option<String>,
-    /// example binary to run
+    /// Specify the instruments template to run. To view instruments, pass --list.
+    #[structopt(default_value = "time")]
+    pub(crate) template: String,
+    /// Example binary to run
     #[structopt(long, group = "target")]
     example: Option<String>,
+    /// Binary to run
     #[structopt(long, group = "target")]
     bin: Option<String>,
+    /// Pass --release to cargo
     #[structopt(long)]
     release: bool,
+    /// List available templates.
+    #[structopt(long)]
+    pub(crate) list: bool,
     /// Output file, stdout if not present
     #[structopt(short = "o", long = "out", parse(from_os_str))]
     pub(crate) output: Option<PathBuf>,
@@ -70,7 +76,7 @@ mod tests {
     #[test]
     fn defaults() {
         let opts = Opts::from_iter(&["instrument"]);
-        assert!(opts.template.is_none());
+        assert_eq!(opts.template.as_str(), "time");
         assert!(opts.example.is_none());
         assert!(opts.bin.is_none());
         assert!(!opts.release);

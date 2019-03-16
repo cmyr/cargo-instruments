@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Output};
 
 use failure::{format_err, Error};
 
@@ -16,6 +16,49 @@ pub(crate) fn check_existence() -> Result<(), Error> {
              Please install the Xcode Command Line Tools."
         )),
     }
+}
+
+/// Return a string listing available templates.
+pub(crate) fn list() -> Result<String, Error> {
+    let Output { status, stdout, .. } =
+        Command::new("instruments").args(&["-s", "templates"]).output()?;
+
+    if !status.success() {
+        return Err(format_err!("'instruments -s templates' command errored"));
+    }
+
+    let templates = String::from_utf8(stdout)?;
+    let mut output = format!(
+        "Instruments provides the following built-in templates.\n\
+         Aliases are indicated in parentheses.\n"
+    );
+
+    let mut templates = templates
+        .lines()
+        .skip(1)
+        .map(|line| (line, abbrev_name(line.trim().trim_matches('"'))))
+        .collect::<Vec<_>>();
+
+    if templates.is_empty() {
+        return Err(format_err!("no templates returned from 'instruments -s templates'"));
+    }
+
+    let max_width = templates.iter().map(|(l, _)| l.len()).max().unwrap();
+
+    templates.sort_by_key(|&(_, abbrv)| abbrv.is_none());
+
+    for (name, abbrv) in templates {
+        output.push('\n');
+        output.push_str(name);
+        if let Some(abbrv) = abbrv {
+            let some_spaces = "                                              ";
+            let lpad = max_width - name.len();
+            output.push_str(&some_spaces[..lpad]);
+            output.push_str(&format!("({})", abbrv));
+        }
+    }
+
+    Ok(output)
 }
 
 pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> Result<(), Error> {
@@ -81,6 +124,22 @@ fn now_timestamp() -> impl std::fmt::Display {
     now.format(&fmt)
 }
 
-fn resolve_template(_args: &Opts) -> String {
-    String::from("Time Profiler")
+fn resolve_template<'a>(args: &'a Opts) -> &'a str {
+    match args.template.as_str() {
+        "time" => "Time Profiler",
+        "alloc" => "Allocations",
+        "io" => "File Activity",
+        "sys" => "System Trace",
+        other => other,
+    }
+}
+
+fn abbrev_name(template: &str) -> Option<&'static str> {
+    match template {
+        "Time Profiler" => Some("time"),
+        "Allocations" => Some("alloc"),
+        "File Activity" => Some("io"),
+        "System Trace" => Some("sys"),
+        _ => None,
+    }
 }
