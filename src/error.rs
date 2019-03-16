@@ -4,6 +4,7 @@ use std::io;
 pub(crate) enum Error {
     Io(io::Error),
     Cargo(failure::Error),
+    Other(String),
 }
 
 impl From<failure::Error> for Error {

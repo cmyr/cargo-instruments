@@ -2,6 +2,8 @@ extern crate structopt;
 
 mod error;
 mod opt;
+mod app;
+
 use error::Error;
 use opt::{Cli, Opts};
 
@@ -9,10 +11,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, ExitStatus};
 
+
 use structopt::StructOpt;
 
 fn main() {
-    let Cli::Profile(args) = Cli::from_args();
+
+    //eprintln!("args: {:?}", ::std::env::args().collect::<Vec<_>>());
+    let Cli::Instrument(args) = Cli::from_args();
 
     if let Err(e) = run(args) {
         eprintln!("{:?}", e);
@@ -22,9 +27,11 @@ fn main() {
 
 fn run(args: Opts) -> Result<(), Error> {
     // do cargo build
-    let exec_path = cargo_build(&args)?;
-    let exit_code = run_profiler(&exec_path, &args)?;
-    eprintln!("exited with {:?}", exit_code);
+
+    app::run(&args).unwrap();
+    //let exec_path = cargo_build(&args)?;
+    //let exit_code = run_profiler(&exec_path, &args)?;
+    //eprintln!("exited with {:?}", exit_code);
     Ok(())
 }
 
@@ -51,11 +58,10 @@ fn cargo_build(_args: &Opts) -> Result<PathBuf, Error> {
     use cargo::ops::CompileOptions;
     let cfg = cargo::util::config::Config::default()?;
     let opts = CompileOptions::new(&cfg, CompileMode::Build)?;
+    unimplemented!()
+    //let result = cargo::ops::compile(&ws, &opts)?;
 
-    let path = cargo::util::important_paths::find_root_manifest_for_wd(cfg.cwd())?;
-    let ws = cargo::core::Workspace::new(&path, &cfg)?;
-    let result = cargo::ops::compile(&ws, &opts)?;
-    Ok(result.binaries.first().unwrap().to_owned())
+    //Ok(result.binaries.first().unwrap().to_owned())
 }
 
 fn get_target_dir(_args: &Opts) -> Result<PathBuf, Error> {
