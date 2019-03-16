@@ -6,6 +6,9 @@ Easily generate [Instruments] traces for your rust crate.
 It allows you to easily profile any binary in your crate, generating files
 that can be viewed in the Instruments app.
 
+![Instruments Time Profiler](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_time1.png)
+![Instruments System Trace](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_sys1.png)
+
 ## Installation
 
 First, ensure that you are running macOS, with Cargo, Xcode, and the Xcode Command Line
