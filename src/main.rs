@@ -1,20 +1,13 @@
-extern crate structopt;
-
 mod app;
 mod instruments;
 mod opt;
 
-use opt::Cli;
-
-use std::process;
-
-use structopt::StructOpt;
-
 fn main() {
-    let Cli::Instrument(args) = Cli::from_args();
+    use structopt::StructOpt;
+    let opt::Cli::Instrument(args) = opt::Cli::from_args();
 
     if let Err(e) = app::run(args) {
         eprintln!("{:?}", e);
-        process::exit(1);
+        std::process::exit(1);
     }
 }

@@ -1,3 +1,5 @@
+//! interfacing with the `instruments` command line tool
+
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -67,7 +69,7 @@ pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> R
 
     eprintln!("profiling {:?} with '{}', saving to {:?}", exec_path, template, outfile);
 
-    if args.ddebug {
+    if args.zdev_debug {
         return Err(format_err!("aborted for debug"));
     }
 

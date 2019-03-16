@@ -1,3 +1,5 @@
+//! The main application logic.
+
 use std::path::PathBuf;
 
 use cargo::core::Workspace;
@@ -8,23 +10,11 @@ use failure::{format_err, Error};
 use crate::instruments;
 use crate::opt::{CargoOpts, Opts, Target};
 
-// RESCOPE:
-//
-// only build main executable or an example
-//
-//
-// TODOS:
-//
-// - support --bin and --example
-// - only time profiler
-
-// FUTURE:
-//
-// allow building of a benchmark
-
+/// The main entrance point, once args have been parsed.
 pub(crate) fn run(args: Opts) -> Result<(), Error> {
     use cargo::util::important_paths::find_root_manifest_for_wd;
     instruments::check_existence()?;
+
     if args.list {
         let list = instruments::list()?;
         println!("{}", list);
@@ -41,6 +31,8 @@ pub(crate) fn run(args: Opts) -> Result<(), Error> {
     instruments::run(&args, exec_path, workspace_root)
 }
 
+/// Attempts to build the specified target. On success, returns the path to
+/// the built executable.
 fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
     use cargo::core::shell::Verbosity;
     workspace.config().shell().set_verbosity(Verbosity::Normal);
@@ -52,7 +44,6 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
     let opts = make_compile_opts(&cargo_args, workspace.config())?;
 
     let result = cargo::ops::compile(workspace, &opts)?;
-    debug_compilation_result(&result);
 
     match result.binaries.as_slice() {
         [path] => Ok(path.clone()),
@@ -61,6 +52,8 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
     }
 }
 
+/// Generate the `CompileOptions`. This is mostly about applying filters based
+/// on user args, so we build as little as possible.
 fn make_compile_opts<'a>(
     cargo_args: &CargoOpts,
     cfg: &'a Config,
@@ -93,9 +86,10 @@ fn make_compile_opts<'a>(
     Ok(opts)
 }
 
+/// Searches the workspace for the named target, returning an Error if it can't
+/// be found.
 fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> {
     let package = workspace.current()?;
-    eprintln!("TARGETS: {:?}", &package.targets());
     let mut targets = package.targets().iter();
     let has_target = match target {
         Target::Main => targets.find(|t| t.is_bin()).is_some(),
@@ -107,14 +101,4 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
     } else {
         Ok(())
     }
-}
-
-fn debug_compilation_result(result: &cargo::core::compiler::Compilation) {
-    eprintln!(
-        "\
-         tests: {:?}\n\
-         bins: {:?}\n\
-         ",
-        &result.tests, &result.binaries
-    );
 }

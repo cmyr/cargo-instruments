@@ -1,18 +1,23 @@
+//! CLI argument handling
+
 use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 #[structopt(bin_name = "cargo")]
 pub(crate) enum Cli {
+    /// Profile a binary with Xcode Instruments.
+    ///
+    /// By default, cargo-instruments will build your main binary.
     #[structopt(name = "instrument")]
     Instrument(Opts),
 }
 
-/// Profile a binary with Xcode Instruments
 #[derive(Debug, StructOpt)]
-#[structopt(name = "cargo-instrument", about = "About cargo-instrument")]
 pub(crate) struct Opts {
-    /// Specify the instruments template to run. To view instruments, pass --list.
+    /// Specify the instruments template to run
+    ///
+    /// To see available templates, pass --list.
     #[structopt(default_value = "time")]
     pub(crate) template: String,
     /// Example binary to run
@@ -24,19 +29,22 @@ pub(crate) struct Opts {
     /// Pass --release to cargo
     #[structopt(long)]
     release: bool,
-    /// List available templates.
+    /// List available templates
     #[structopt(long)]
     pub(crate) list: bool,
-    /// Output file, stdout if not present
+    /// Output file. If missing, defaults to 'target/instruments/{name}{date}.trace'
+    ///
+    /// This file may already exist, in which case a new Run will be added.
     #[structopt(short = "o", long = "out", parse(from_os_str))]
     pub(crate) output: Option<PathBuf>,
 
     //TODO: remove me
-    /// development only flag.
-    #[structopt(long)]
-    pub(crate) ddebug: bool,
+    #[doc(hidden)]
+    #[structopt(long = "ddbg")]
+    pub(crate) zdev_debug: bool,
 }
 
+/// The target, parsed from args.
 #[derive(Debug, PartialEq)]
 pub(crate) enum Target {
     Main,
@@ -44,6 +52,7 @@ pub(crate) enum Target {
     Bin(String),
 }
 
+/// Cargo-specific options
 pub(crate) struct CargoOpts {
     pub(crate) target: Target,
     pub(crate) release: bool,
@@ -61,13 +70,6 @@ impl Opts {
         CargoOpts { target, release: self.release }
     }
 }
-
-// options:
-//
-// cargo instrument
-// cargo instrument -t time --test some_test_case
-// cargo instrument -t time --example my_example
-// cargo instrument -t time --example my_example -o my_output
 
 #[cfg(test)]
 mod tests {
