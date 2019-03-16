@@ -6,6 +6,18 @@ use failure::{format_err, Error};
 
 use crate::opt::Opts;
 
+/// Check that `instruments` is in $PATH.
+pub(crate) fn check_existence() -> Result<(), Error> {
+    let path = ["/", "usr", "bin", "instruments"].iter().collect::<PathBuf>();
+    match path.exists() {
+        true => Ok(()),
+        false => Err(format_err!(
+            "/usr/bin/instruments does not exist. \
+             Please install the Xcode Command Line Tools."
+        )),
+    }
+}
+
 pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> Result<(), Error> {
     let outfile = get_out_file(args, &exec_path, &workspace_root)?;
     let template = resolve_template(&args);

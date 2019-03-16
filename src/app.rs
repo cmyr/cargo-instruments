@@ -24,6 +24,7 @@ use crate::opt::{CargoOpts, Opts, Target};
 
 pub(crate) fn run(args: Opts) -> Result<(), Error> {
     use cargo::util::important_paths::find_root_manifest_for_wd;
+    instruments::check_existence()?;
 
     let cfg = Config::default()?;
     let manifest_path = find_root_manifest_for_wd(cfg.cwd())?;
