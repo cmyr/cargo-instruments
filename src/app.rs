@@ -1,8 +1,9 @@
 use cargo::core::Workspace;
+use cargo::ops::CompileOptions;
+use cargo::util::config::Config;
+use failure::{format_err, Error};
 
-//use crate::error::Error;
-use crate::opt::{Opts, Target};
-use failure::{Error, format_err};
+use crate::opt::{CargoOpts, Opts, Target};
 
 // RESCOPE:
 //
@@ -13,7 +14,6 @@ use failure::{Error, format_err};
 //
 // - support --bin and --example
 // - only time profiler
-
 
 // FUTURE:
 //
@@ -30,8 +30,6 @@ pub(crate) fn run(args: &Opts) -> Result<(), Error> {
 }
 
 fn build_target(args: &Opts, workspace: &Workspace) -> Result<(), Error> {
-    use cargo::core::compiler::CompileMode;
-    use cargo::ops::CompileOptions;
     use cargo::core::shell::Verbosity;
 
     workspace.config().shell().set_verbosity(Verbosity::Normal);
@@ -39,20 +37,47 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<(), Error> {
     let cargo_args = args.to_cargo_opts();
 
     validate_target(&cargo_args.target, workspace)?;
-    return Ok(());
 
-    //TODO: verify that workspace contains a valid target
-    let mut opts = CompileOptions::new(workspace.config(), CompileMode::Build)?;
-    opts.build_config.release = cargo_args.release;
-    //eprintln!("compie options: {:?}", &opts);
-
+    let opts = make_compile_opts(&cargo_args, workspace.config())?;
+    eprintln!("compie options: {:?}", &opts);
     let result = cargo::ops::compile(workspace, &opts)?;
     debug_compilation_result(&result);
     Ok(())
 }
 
-fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> {
+fn make_compile_opts<'a>(
+    cargo_args: &CargoOpts,
+    cfg: &'a Config,
+) -> Result<CompileOptions<'a>, Error> {
+    use cargo::core::compiler::CompileMode;
+    use cargo::ops::CompileFilter;
 
+    let mut opts = CompileOptions::new(cfg, CompileMode::Build)?;
+    opts.build_config.release = cargo_args.release;
+    if &cargo_args.target != &Target::Main {
+        let (bins, examples) = match &cargo_args.target {
+            Target::Bin(bin) => (vec![bin.clone()], vec![]),
+            Target::Example(bin) => (vec![], vec![bin.clone()]),
+            _ => unreachable!(),
+        };
+
+        opts.filter = CompileFilter::new(
+            false,
+            bins,
+            false,
+            Vec::new(),
+            false,
+            examples,
+            false,
+            Vec::new(),
+            false,
+            false,
+        );
+    }
+    Ok(opts)
+}
+
+fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> {
     let package = workspace.current()?;
     eprintln!("TARGETS: {:?}", &package.targets());
     let mut targets = package.targets().iter();
@@ -68,10 +93,12 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
     }
 }
 
-
 fn debug_compilation_result(result: &cargo::core::compiler::Compilation) {
-    eprintln!("\
-    tests: {:?}\n\
-    bins: {:?}\n\
-    ", &result.tests, &result.binaries);
+    eprintln!(
+        "\
+         tests: {:?}\n\
+         bins: {:?}\n\
+         ",
+        &result.tests, &result.binaries
+    );
 }

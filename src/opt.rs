@@ -26,7 +26,7 @@ pub(crate) struct Opts {
     pub(crate) output: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum Target {
     Main,
     Example(String),
@@ -40,7 +40,6 @@ pub(crate) struct CargoOpts {
 
 impl Opts {
     pub(crate) fn to_cargo_opts(&self) -> CargoOpts {
-
         let target = match (self.example.as_ref(), self.bin.as_ref()) {
             (Some(example), None) => Target::Example(example.clone()),
             (None, Some(bin)) => Target::Bin(bin.clone()),
@@ -48,10 +47,7 @@ impl Opts {
             (Some(_), Some(_)) => panic!("bin & example are exclusive, enforced by StructOpt"),
         };
 
-        CargoOpts {
-            target,
-            release: self.release,
-        }
+        CargoOpts { target, release: self.release }
     }
 }
 
@@ -86,6 +82,7 @@ mod tests {
         let opts = Opts::from_iter(&["instrument", "--example", "example_binary"]);
         assert!(opts.bin.is_none());
         assert_eq!(opts.example.unwrap().as_str(), "example_binary");
-        let _opts = Opts::from_iter_safe(&["instrument", "--bin", "thing", "--example", "other"]).unwrap();
+        let _opts =
+            Opts::from_iter_safe(&["instrument", "--bin", "thing", "--example", "other"]).unwrap();
     }
 }
