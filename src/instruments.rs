@@ -73,17 +73,30 @@ pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> R
         return Err(format_err!("aborted for debug"));
     }
 
-    let status = Command::new("instruments")
-        .args(&["-t", &template])
-        .arg("-D")
-        .arg(&outfile)
-        .arg(&exec_path)
-        .status()?;
+    let mut command = Command::new("instruments");
+    command.args(&["-t", &template]).arg("-D").arg(&outfile);
 
-    match status.success() {
-        false => Err(format_err!("instruments failed")),
-        true => Ok(()),
+    if let Some(limit) = args.limit {
+        command.args(&["-l", &limit.to_string()]);
     }
+
+    command.arg(&exec_path);
+
+    if !args.target_args.is_empty() {
+        command.args(args.target_args.as_slice());
+    }
+
+    let status = command.status()?;
+
+    if !status.success() {
+        return Err(format_err!("instruments failed"));
+    }
+
+    if args.open {
+        open_file(&outfile)?;
+    }
+
+    Ok(())
 }
 
 fn get_out_file(
@@ -116,6 +129,15 @@ fn get_target_dir(workspace_root: &PathBuf) -> Result<PathBuf, Error> {
         fs::create_dir(&target_dir)?;
     }
     Ok(target_dir)
+}
+
+fn open_file(file: &PathBuf) -> Result<(), Error> {
+    let status = Command::new("open").arg(file).status()?;
+
+    if !status.success() {
+        return Err(format_err!("open failed"));
+    }
+    Ok(())
 }
 
 fn now_timestamp() -> impl std::fmt::Display {

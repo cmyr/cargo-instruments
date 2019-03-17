@@ -1,5 +1,6 @@
 //! CLI argument handling
 
+use std::ffi::OsString;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -38,10 +39,23 @@ pub(crate) struct Opts {
     #[structopt(short = "o", long = "out", value_name = "PATH", parse(from_os_str))]
     pub(crate) output: Option<PathBuf>,
 
+    /// Optionally limit the maximum running time of the application.
+    /// It will be terminated if this is exceded.
+    #[structopt(short = "l", long, value_name = "MILLIS")]
+    pub(crate) limit: Option<usize>,
+
+    /// Open the generated .trace file when finished
+    #[structopt(long)]
+    pub(crate) open: bool,
+
     //TODO: remove me
     #[doc(hidden)]
     #[structopt(long = "ddbg")]
     pub(crate) zdev_debug: bool,
+
+    /// Arguments passed to the target binary
+    #[structopt(short = "a", long = "args", parse(from_os_str))]
+    pub(crate) target_args: Vec<OsString>,
 }
 
 /// The target, parsed from args.
@@ -97,5 +111,15 @@ mod tests {
         assert_eq!(opts.example.unwrap().as_str(), "example_binary");
         let _opts =
             Opts::from_iter_safe(&["instruments", "--bin", "thing", "--example", "other"]).unwrap();
+    }
+
+    #[test]
+    fn limit_millis() {
+        let opts = Opts::from_iter(&["instruments", "-l", "420"]);
+        assert_eq!(opts.limit, Some(420));
+        let opts = Opts::from_iter(&["instruments", "--limit", "808"]);
+        assert_eq!(opts.limit, Some(808));
+        let opts = Opts::from_iter(&["instruments"]);
+        assert_eq!(opts.limit, None);
     }
 }
