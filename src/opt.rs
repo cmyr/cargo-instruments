@@ -1,6 +1,5 @@
 //! CLI argument handling
 
-use std::ffi::OsString;
 use std::fmt;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -49,9 +48,10 @@ pub(crate) struct Opts {
     #[structopt(long)]
     pub(crate) open: bool,
 
-    /// Arguments passed to the target binary
-    #[structopt(short = "a", long = "args", parse(from_os_str))]
-    pub(crate) target_args: Vec<OsString>,
+    /// Arguments passed to the target binary. If you're having trouble,
+    /// try wrapping args in double and single quotes, like --args '"-h --fun plz"'.
+    #[structopt(short = "a", long = "args", value_name = "ARGS")]
+    pub(crate) target_args: Vec<String>,
 }
 
 /// The target, parsed from args.
@@ -127,5 +127,15 @@ mod tests {
         assert_eq!(opts.limit, Some(808));
         let opts = Opts::from_iter(&["instruments"]);
         assert_eq!(opts.limit, None);
+    }
+
+
+    #[test]
+    fn var_args() {
+        // this isn't ideal, but works for now
+        let opts = Opts::from_iter(&["instruments", "alloc", "--limit", "808", "--args", "hi -h --bin"]);
+        assert_eq!(opts.template, "alloc");
+        assert_eq!(opts.limit, Some(808));
+        assert_eq!(opts.target_args, vec!["hi -h --bin"]);
     }
 }

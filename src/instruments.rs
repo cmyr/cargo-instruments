@@ -63,7 +63,11 @@ pub(crate) fn list() -> Result<String, Error> {
     Ok(output)
 }
 
-pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> Result<(), Error> {
+pub(crate) fn run(
+    args: &Opts,
+    exec_path: PathBuf,
+    workspace_root: &PathBuf,
+) -> Result<PathBuf, Error> {
     let outfile = get_out_file(args, &exec_path, &workspace_root)?;
     let template = resolve_template(&args);
 
@@ -80,17 +84,15 @@ pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> R
         command.args(args.target_args.as_slice());
     }
 
-    let status = command.status()?;
+    let output = command.output()?;
 
-    if !status.success() {
-        return Err(format_err!("instruments failed"));
+    if !output.status.success() {
+        let stderr =
+            String::from_utf8(output.stderr).unwrap_or(String::from("failed to capture stderr"));
+        Err(format_err!("instruments errored: {}", stderr))
+    } else {
+        Ok(outfile)
     }
-
-    if args.open {
-        open_file(&outfile)?;
-    }
-
-    Ok(())
 }
 
 fn get_out_file(
@@ -123,15 +125,6 @@ fn get_target_dir(workspace_root: &PathBuf) -> Result<PathBuf, Error> {
             .map_err(|e| format_err!("failed to create {:?}: {}", &target_dir, e))?;
     }
     Ok(target_dir)
-}
-
-fn open_file(file: &PathBuf) -> Result<(), Error> {
-    let status = Command::new("open").arg(file).status()?;
-
-    if !status.success() {
-        return Err(format_err!("open failed"));
-    }
-    Ok(())
 }
 
 fn now_timestamp() -> impl std::fmt::Display {

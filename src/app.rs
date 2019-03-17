@@ -1,11 +1,13 @@
 //! The main application logic.
 
 use std::path::PathBuf;
+use std::process::Command;
 
 use cargo::core::Workspace;
 use cargo::ops::CompileOptions;
 use cargo::util::config::Config;
 use failure::{format_err, Error};
+use termcolor::Color;
 
 use crate::instruments;
 use crate::opt::{CargoOpts, Opts, Target};
@@ -26,9 +28,32 @@ pub(crate) fn run(args: Opts) -> Result<(), Error> {
     let workspace = Workspace::new(&manifest_path, &cfg)?;
     let workspace_root = manifest_path.parent().unwrap().to_owned();
 
-    let exec_path = build_target(&args, &workspace)?;
+    let exec_path = match build_target(&args, &workspace) {
+        Ok(path) => path,
+        Err(e) => {
+            workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
+            return Ok(());
+        }
+    };
 
-    instruments::run(&args, exec_path, workspace_root)
+    let relpath = exec_path.strip_prefix(&workspace_root).unwrap_or(exec_path.as_path());
+    workspace.config().shell().status("Profiling", relpath.to_string_lossy())?;
+
+    let trace_path = match instruments::run(&args, exec_path, &workspace_root) {
+        Ok(path) => path,
+        Err(e) => {
+            workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
+            return Ok(());
+        }
+    };
+
+    let reltrace = trace_path.strip_prefix(&workspace_root).unwrap_or(trace_path.as_path());
+    workspace.config().shell().status("Wrote Trace", reltrace.to_string_lossy())?;
+    if args.open {
+        workspace.config().shell().status("Opening", reltrace.to_string_lossy())?;
+        open_file(&trace_path)?;
+    }
+    Ok(())
 }
 
 /// Attempts to build the specified target. On success, returns the path to
@@ -101,4 +126,13 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
     } else {
         Ok(())
     }
+}
+
+fn open_file(file: &PathBuf) -> Result<(), Error> {
+    let status = Command::new("open").arg(file).status()?;
+
+    if !status.success() {
+        return Err(format_err!("open failed"));
+    }
+    Ok(())
 }
