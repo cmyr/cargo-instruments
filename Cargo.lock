@@ -133,7 +133,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-instruments"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cargo 0.34.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -12,7 +12,7 @@ that can be viewed in the Instruments app.
 ## Installation
 
 First, ensure that you are running macOS, with Cargo, Xcode, and the Xcode Command Line
-Tools installed; then run with **`cargo install cargo-instruments`**.
+Tools installed; then install with **`cargo install cargo-instruments`**.
 
 ## Use
 
@@ -20,7 +20,7 @@ Tools installed; then run with **`cargo install cargo-instruments`**.
 
 `cargo-instruments` requires a binary target to run. By default, it will try to
 build the current crate's `main.rs`. You can specify an alternative binary by
-using the `--bin` and `--example` flags.
+using the `--bin` or `--example` flags.
 
 _Generate a new trace file_ (by default saved in `/target/instruments`)
 
@@ -28,7 +28,7 @@ _Generate a new trace file_ (by default saved in `/target/instruments`)
 $ cargo instruments [template] [--bin foo | --example bar] [--out out_file]
 ```
 
-_Open the file in Instruments.app_
+_Open the file in Instruments.app_ (or pass `--open` to open automatically)
 
 ```sh
 $ open target/instruments/my_bin_YYYY-MM-DD-THH:MM:SS.trace
