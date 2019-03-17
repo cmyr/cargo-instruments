@@ -119,7 +119,8 @@ fn get_target_dir(workspace_root: &PathBuf) -> Result<PathBuf, Error> {
     target_dir.push("target");
     target_dir.push("instruments");
     if !target_dir.exists() {
-        fs::create_dir(&target_dir)?;
+        fs::create_dir_all(&target_dir)
+            .map_err(|e| format_err!("failed to create {:?}: {}", &target_dir, e))?;
     }
     Ok(target_dir)
 }
