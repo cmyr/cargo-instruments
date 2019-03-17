@@ -67,12 +67,6 @@ pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: PathBuf) -> R
     let outfile = get_out_file(args, &exec_path, &workspace_root)?;
     let template = resolve_template(&args);
 
-    eprintln!("profiling {:?} with '{}', saving to {:?}", exec_path, template, outfile);
-
-    if args.zdev_debug {
-        return Err(format_err!("aborted for debug"));
-    }
-
     let mut command = Command::new("instruments");
     command.args(&["-t", &template]).arg("-D").arg(&outfile);
 
@@ -124,7 +118,6 @@ fn get_target_dir(workspace_root: &PathBuf) -> Result<PathBuf, Error> {
     let mut target_dir = workspace_root.clone();
     target_dir.push("target");
     target_dir.push("instruments");
-    eprintln!("target_dir: {:?}", &target_dir);
     if !target_dir.exists() {
         fs::create_dir(&target_dir)?;
     }

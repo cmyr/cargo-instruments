@@ -97,7 +97,7 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
         Target::Example(name) => targets.find(|t| t.is_example() && &t.name() == name).is_some(),
     };
     if !has_target {
-        Err(format_err!("missing target {:?}", target))
+        Err(format_err!("missing target {}", target))
     } else {
         Ok(())
     }

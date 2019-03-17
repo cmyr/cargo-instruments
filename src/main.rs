@@ -10,7 +10,7 @@ fn main() {
     let opt::Cli::Instruments(args) = opt::Cli::from_args();
 
     if let Err(e) = app::run(args) {
-        eprintln!("{:?}", e);
+        eprintln!("{}", e);
         std::process::exit(1);
     }
 }

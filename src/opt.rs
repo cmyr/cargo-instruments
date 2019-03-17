@@ -1,6 +1,7 @@
 //! CLI argument handling
 
 use std::ffi::OsString;
+use std::fmt;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -48,11 +49,6 @@ pub(crate) struct Opts {
     #[structopt(long)]
     pub(crate) open: bool,
 
-    //TODO: remove me
-    #[doc(hidden)]
-    #[structopt(long = "ddbg")]
-    pub(crate) zdev_debug: bool,
-
     /// Arguments passed to the target binary
     #[structopt(short = "a", long = "args", parse(from_os_str))]
     pub(crate) target_args: Vec<OsString>,
@@ -64,6 +60,16 @@ pub(crate) enum Target {
     Main,
     Example(String),
     Bin(String),
+}
+
+impl fmt::Display for Target {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Target::Main => write!(f, "src/main.rs"),
+            Target::Example(bin) => write!(f, "examples/{}.rs", bin),
+            Target::Bin(bin) => write!(f, "bin/{}.rs", bin),
+        }
+    }
 }
 
 /// Cargo-specific options
