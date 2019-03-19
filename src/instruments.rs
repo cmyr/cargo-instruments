@@ -11,12 +11,13 @@ use crate::opt::Opts;
 /// Check that `instruments` is in $PATH.
 pub(crate) fn check_existence() -> Result<(), Error> {
     let path = ["/", "usr", "bin", "instruments"].iter().collect::<PathBuf>();
-    match path.exists() {
-        true => Ok(()),
-        false => Err(format_err!(
+    if path.exists() {
+        Ok(())
+    } else {
+        Err(format_err!(
             "/usr/bin/instruments does not exist. \
              Please install the Xcode Command Line Tools."
-        )),
+        ))
     }
 }
 
@@ -30,10 +31,9 @@ pub(crate) fn list() -> Result<String, Error> {
     }
 
     let templates = String::from_utf8(stdout)?;
-    let mut output = format!(
-        "Instruments provides the following built-in templates.\n\
-         Aliases are indicated in parentheses.\n"
-    );
+    let mut output: String = "Instruments provides the following built-in templates.\n\
+                              Aliases are indicated in parentheses.\n"
+        .into();
 
     let mut templates = templates
         .lines()
@@ -88,7 +88,7 @@ pub(crate) fn run(
 
     if !output.status.success() {
         let stderr =
-            String::from_utf8(output.stderr).unwrap_or(String::from("failed to capture stderr"));
+            String::from_utf8(output.stderr).unwrap_or_else(|_| "failed to capture stderr".into());
         Err(format_err!("instruments errored: {}", stderr))
     } else {
         Ok(outfile)
@@ -107,7 +107,7 @@ fn get_out_file(
     let exec_name = exec_path
         .file_stem()
         .and_then(|s| s.to_str())
-        .ok_or(format_err!("invalid exec path {:?}", exec_path))?;
+        .ok_or_else(|| format_err!("invalid exec path {:?}", exec_path))?;
 
     let filename = format!("{}_{}", exec_name, now_timestamp());
     let mut path = get_target_dir(workspace_root)?;
@@ -134,7 +134,7 @@ fn now_timestamp() -> impl std::fmt::Display {
     now.format(&fmt)
 }
 
-fn resolve_template<'a>(args: &'a Opts) -> &'a str {
+fn resolve_template(args: &Opts) -> &str {
     match args.template.as_str() {
         "time" => "Time Profiler",
         "alloc" => "Allocations",

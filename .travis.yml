@@ -1,0 +1,37 @@
+language: rust
+addons:
+  apt:
+    packages:
+      - libssl-dev
+
+cache: cargo
+
+rust:
+  - stable
+  - beta
+
+os:
+  - osx
+
+script:
+  - cargo test --verbose
+  - if rustup component add rustfmt ; then cargo fmt --all -- --check ; fi
+  - if rustup component add clippy ; then cargo clippy --all-targets -- -D warnings ; else echo "no clippy"; fi
+
+
+matrix:
+  fast_finish: true
+
+# TODO: set this up to auto-push to crates on a new tag
+# jobs:
+#   include:
+#     - stage: deploy
+#       script: skip
+#       rust: stable
+#       deploy:
+#         provider: cargo
+#         on:
+#           tags: true
+#         token:
+#           secure: $TOKEN
+#

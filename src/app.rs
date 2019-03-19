@@ -36,7 +36,7 @@ pub(crate) fn run(args: Opts) -> Result<(), Error> {
         }
     };
 
-    let relpath = exec_path.strip_prefix(&workspace_root).unwrap_or(exec_path.as_path());
+    let relpath = exec_path.strip_prefix(&workspace_root).unwrap_or_else(|_| exec_path.as_path());
     workspace.config().shell().status("Profiling", relpath.to_string_lossy())?;
 
     let trace_path = match instruments::run(&args, exec_path, &workspace_root) {
@@ -47,7 +47,8 @@ pub(crate) fn run(args: Opts) -> Result<(), Error> {
         }
     };
 
-    let reltrace = trace_path.strip_prefix(&workspace_root).unwrap_or(trace_path.as_path());
+    let reltrace =
+        trace_path.strip_prefix(&workspace_root).unwrap_or_else(|_| trace_path.as_path());
     workspace.config().shell().status("Wrote Trace", reltrace.to_string_lossy())?;
     if args.open {
         workspace.config().shell().status("Opening", reltrace.to_string_lossy())?;
@@ -88,7 +89,7 @@ fn make_compile_opts<'a>(
 
     let mut opts = CompileOptions::new(cfg, CompileMode::Build)?;
     opts.build_config.release = cargo_args.release;
-    if &cargo_args.target != &Target::Main {
+    if cargo_args.target != Target::Main {
         let (bins, examples) = match &cargo_args.target {
             Target::Bin(bin) => (vec![bin.clone()], vec![]),
             Target::Example(bin) => (vec![], vec![bin.clone()]),
@@ -117,9 +118,9 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
     let package = workspace.current()?;
     let mut targets = package.targets().iter();
     let has_target = match target {
-        Target::Main => targets.find(|t| t.is_bin()).is_some(),
-        Target::Bin(name) => targets.find(|t| t.is_bin() && t.name() == name).is_some(),
-        Target::Example(name) => targets.find(|t| t.is_example() && &t.name() == name).is_some(),
+        Target::Main => targets.any(|t| t.is_bin()),
+        Target::Bin(name) => targets.any(|t| t.is_bin() && t.name() == name),
+        Target::Example(name) => targets.any(|t| t.is_example() && t.name() == name),
     };
     if !has_target {
         Err(format_err!("missing target {}", target))

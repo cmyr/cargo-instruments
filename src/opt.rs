@@ -129,11 +129,11 @@ mod tests {
         assert_eq!(opts.limit, None);
     }
 
-
     #[test]
     fn var_args() {
         // this isn't ideal, but works for now
-        let opts = Opts::from_iter(&["instruments", "alloc", "--limit", "808", "--args", "hi -h --bin"]);
+        let opts =
+            Opts::from_iter(&["instruments", "alloc", "--limit", "808", "--args", "hi -h --bin"]);
         assert_eq!(opts.template, "alloc");
         assert_eq!(opts.limit, Some(808));
         assert_eq!(opts.target_args, vec!["hi -h --bin"]);
