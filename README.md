@@ -25,7 +25,7 @@ using the `--bin` or `--example` flags.
 _Generate a new trace file_ (by default saved in `/target/instruments`)
 
 ```sh
-$ cargo instruments [template] [--bin foo | --example bar] [--out out_file]
+$ cargo instruments [-t template] [--bin foo | --example bar] [--out out_file]
 ```
 
 _Open the file in Instruments.app_ (or pass `--open` to open automatically)
@@ -44,13 +44,19 @@ Profiler]", which collects CPU core and thread use.
 ### examples
 
 ```sh
-# profile the main binary with the Allocations template
-$ cargo instruments alloc
+# View all args and options
+$ cargo instruments --help
 ```
 
 ```sh
-# profile examples my_example.rs
-$ cargo instruments --example my_example
+# profile the main binary with the Allocations template
+$ cargo instruments -t alloc
+```
+
+```sh
+# profile examples/my_example.rs, with the default template,
+# for 10 seconds, and open the trace when finished
+$ cargo instruments --example my_example --limit 10000 --open
 ```
 
 ## Resources

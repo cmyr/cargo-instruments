@@ -15,11 +15,12 @@ pub(crate) enum Cli {
 }
 
 #[derive(Debug, StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
 pub(crate) struct Opts {
     /// Specify the instruments template to run
     ///
     /// To see available templates, pass --list.
-    #[structopt(default_value = "time", value_name = "TEMPLATE")]
+    #[structopt(short = "t", long, default_value = "time", value_name = "TEMPLATE")]
     pub(crate) template: String,
     /// Example binary to run
     #[structopt(long, group = "target", value_name = "NAME")]
@@ -48,9 +49,9 @@ pub(crate) struct Opts {
     #[structopt(long)]
     pub(crate) open: bool,
 
-    /// Arguments passed to the target binary. If you're having trouble,
-    /// try wrapping args in double and single quotes, like --args '"-h --fun plz"'.
-    #[structopt(short = "a", long = "args", value_name = "ARGS")]
+    /// Arguments passed to the target binary. To pass flags, precede child args
+    /// with --, e.g. `cargo instruments -- -t test1.txt --slow-mode`.
+    #[structopt(value_name = "ARGS")]
     pub(crate) target_args: Vec<String>,
 }
 
@@ -131,11 +132,19 @@ mod tests {
 
     #[test]
     fn var_args() {
-        // this isn't ideal, but works for now
-        let opts =
-            Opts::from_iter(&["instruments", "alloc", "--limit", "808", "--args", "hi -h --bin"]);
+        let opts = Opts::from_iter(&[
+            "instruments",
+            "-t",
+            "alloc",
+            "--limit",
+            "808",
+            "--",
+            "hi",
+            "-h",
+            "--bin",
+        ]);
         assert_eq!(opts.template, "alloc");
         assert_eq!(opts.limit, Some(808));
-        assert_eq!(opts.target_args, vec!["hi -h --bin"]);
+        assert_eq!(opts.target_args, vec!["hi", "-h", "--bin"]);
     }
 }
