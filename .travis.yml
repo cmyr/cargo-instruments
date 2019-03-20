@@ -8,10 +8,14 @@ cache: cargo
 
 rust:
   - stable
-  - beta
+  - nightly
 
 os:
   - osx
+
+matrix:
+  allow_failures:
+    - rust: nightly
 
 script:
   - cargo test --verbose
