@@ -28,6 +28,9 @@ pub(crate) struct Opts {
     /// Binary to run
     #[structopt(long, group = "target", value_name = "NAME")]
     bin: Option<String>,
+    /// Benchmark target to run
+    #[structopt(long, group = "target", value_name = "NAME")]
+    bench: Option<String>,
     /// Pass --release to cargo
     #[structopt(long)]
     release: bool,
@@ -61,6 +64,7 @@ pub(crate) enum Target {
     Main,
     Example(String),
     Bin(String),
+    Bench(String),
 }
 
 impl fmt::Display for Target {
@@ -69,6 +73,7 @@ impl fmt::Display for Target {
             Target::Main => write!(f, "src/main.rs"),
             Target::Example(bin) => write!(f, "examples/{}.rs", bin),
             Target::Bin(bin) => write!(f, "bin/{}.rs", bin),
+            Target::Bench(bench) => write!(f, "bench {}", bench),
         }
     }
 }
@@ -81,14 +86,20 @@ pub(crate) struct CargoOpts {
 
 impl Opts {
     pub(crate) fn to_cargo_opts(&self) -> CargoOpts {
-        let target = match (self.example.as_ref(), self.bin.as_ref()) {
-            (Some(example), None) => Target::Example(example.clone()),
-            (None, Some(bin)) => Target::Bin(bin.clone()),
-            (None, None) => Target::Main,
-            (Some(_), Some(_)) => panic!("bin & example are exclusive, enforced by StructOpt"),
-        };
-
+        let target = self.get_target();
         CargoOpts { target, release: self.release }
+    }
+
+    fn get_target(&self) -> Target {
+        if let Some(example) = self.example.clone() {
+            Target::Example(example)
+        } else if let Some(bin) = self.bin.clone() {
+            Target::Bin(bin)
+        } else if let Some(bench) = self.bench.clone() {
+            Target::Bench(bench)
+        } else {
+            Target::Main
+        }
     }
 }
 

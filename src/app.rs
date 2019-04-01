@@ -70,11 +70,19 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
     let opts = make_compile_opts(&cargo_args, workspace.config())?;
 
     let result = cargo::ops::compile(workspace, &opts)?;
-
-    match result.binaries.as_slice() {
-        [path] => Ok(path.clone()),
-        [] => Err(format_err!("no targets found")),
-        other => Err(format_err!("unexpectedly built multiple targets: {:?}", other)),
+    if let Target::Bench(bench) = cargo_args.target {
+        result
+            .tests
+            .iter()
+            .find(|b| b.2 == bench)
+            .map(|b| b.3.clone())
+            .ok_or_else(|| format_err!("no benchmark '{}'", bench))
+    } else {
+        match result.binaries.as_slice() {
+            [path] => Ok(path.clone()),
+            [] => Err(format_err!("no targets found")),
+            other => Err(format_err!("found multiple targets: {:?}", other)),
+        }
     }
 }
 
@@ -90,9 +98,10 @@ fn make_compile_opts<'a>(
     let mut opts = CompileOptions::new(cfg, CompileMode::Build)?;
     opts.build_config.release = cargo_args.release;
     if cargo_args.target != Target::Main {
-        let (bins, examples) = match &cargo_args.target {
-            Target::Bin(bin) => (vec![bin.clone()], vec![]),
-            Target::Example(bin) => (vec![], vec![bin.clone()]),
+        let (bins, examples, benches) = match &cargo_args.target {
+            Target::Bin(bin) => (vec![bin.clone()], vec![], vec![]),
+            Target::Example(bin) => (vec![], vec![bin.clone()], vec![]),
+            Target::Bench(bin) => (vec![], vec![], vec![bin.clone()]),
             _ => unreachable!(),
         };
 
@@ -104,7 +113,7 @@ fn make_compile_opts<'a>(
             false,
             examples,
             false,
-            Vec::new(),
+            benches,
             false,
             false,
         );
@@ -121,6 +130,7 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
         Target::Main => targets.any(|t| t.is_bin()),
         Target::Bin(name) => targets.any(|t| t.is_bin() && t.name() == name),
         Target::Example(name) => targets.any(|t| t.is_example() && t.name() == name),
+        Target::Bench(name) => targets.any(|t| t.is_bench() && t.name() == name),
     };
     if !has_target {
         Err(format_err!("missing target {}", target))
