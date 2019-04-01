@@ -20,7 +20,8 @@ Tools installed; then install with **`cargo install cargo-instruments`**.
 
 `cargo-instruments` requires a binary target to run. By default, it will try to
 build the current crate's `main.rs`. You can specify an alternative binary by
-using the `--bin` or `--example` flags.
+using the `--bin` or `--example` flags, or a benchmark target with the `--bench`
+flag.
 
 _Generate a new trace file_ (by default saved in `/target/instruments`)
 
