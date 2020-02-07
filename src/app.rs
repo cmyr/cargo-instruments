@@ -74,8 +74,8 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
         result
             .tests
             .iter()
-            .find(|b| b.2 == bench)
-            .map(|b| b.3.clone())
+            .find(|b| b.1.name() == bench)
+            .map(|b| b.2.clone())
             .ok_or_else(|| format_err!("no benchmark '{}'", bench))
     } else {
         match result.binaries.as_slice() {
@@ -92,11 +92,12 @@ fn make_compile_opts<'a>(
     cargo_args: &CargoOpts,
     cfg: &'a Config,
 ) -> Result<CompileOptions<'a>, Error> {
-    use cargo::core::compiler::CompileMode;
+    use cargo::core::compiler::{CompileMode, ProfileKind};
     use cargo::ops::CompileFilter;
 
     let mut opts = CompileOptions::new(cfg, CompileMode::Build)?;
-    opts.build_config.release = cargo_args.release;
+    let profile = if cargo_args.release { ProfileKind::Release } else { ProfileKind::Dev };
+    opts.build_config.profile_kind = profile;
     if cargo_args.target != Target::Main {
         let (bins, examples, benches) = match &cargo_args.target {
             Target::Bin(bin) => (vec![bin.clone()], vec![], vec![]),
@@ -105,7 +106,7 @@ fn make_compile_opts<'a>(
             _ => unreachable!(),
         };
 
-        opts.filter = CompileFilter::new(
+        opts.filter = CompileFilter::from_raw_arguments(
             false,
             bins,
             false,
