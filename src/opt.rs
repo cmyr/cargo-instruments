@@ -15,7 +15,7 @@ pub(crate) enum Cli {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
+#[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
 pub(crate) struct Opts {
     /// Specify the instruments template to run
     ///
