@@ -2,17 +2,29 @@
 
 Easily generate [Instruments] traces for your rust crate.
 
-`cargo-instruments` is glue between cargo and Xcode's bundled profiling suite.
-It allows you to easily profile any binary in your crate, generating files
-that can be viewed in the Instruments app.
+`cargo-instruments` is the glue between cargo and Xcode's bundled profiling
+suite. It allows you to easily profile any binary in your crate, generating
+files that can be viewed in the Instruments app.
 
 ![Instruments Time Profiler](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_time1.png)
 ![Instruments System Trace](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_sys1.png)
 
 ## Installation
 
-First, ensure that you are running macOS, with Cargo, Xcode, and the Xcode Command Line
-Tools installed; then install with **`cargo install cargo-instruments`**.
+### brew
+
+```bash
+brew install cargo-instruments
+```
+
+### Building from Source
+
+First, ensure that you are running macOS, with Cargo, Xcode, and the Xcode
+Command Line Tools installed; then install with
+
+```bash
+cargo install cargo-instruments
+```
 
 ## Use
 
@@ -38,9 +50,8 @@ $ open target/instruments/my_bin_YYYY-MM-DD-THH:MM:SS.trace
 ### Templates
 
 Instruments has the concept of 'templates', which describe sets of dtrace probes
-that can be enabled. `cargo-instruments` will use the "[Time Profiler][Time
-Profiler]", which collects CPU core and thread use.
-
+that can be enabled. `cargo-instruments` will use the "[Time
+Profiler][time profiler]", which collects CPU core and thread use.
 
 ### examples
 
@@ -62,7 +73,7 @@ $ cargo instruments --example my_example --limit 10000 --open
 
 ## Resources
 
-[Instruments Help][Instruments]
+[Instruments Help][instruments]
 
 ### WWDC videos
 
@@ -74,9 +85,5 @@ sessions over the years:
 - [System Trace in Depth](https://developer.apple.com/videos/play/wwdc2016/411/)
 - [Creating Custom Instruments](https://developer.apple.com/videos/play/wwdc2018/410/)
 
-
-
-
-
-[Instruments]: https://help.apple.com/instruments/mac/10.0/
-[Time Profiler]: https://help.apple.com/instruments/mac/10.0/#/dev44b2b437
+[instruments]: https://help.apple.com/instruments/mac/10.0/
+[time profiler]: https://help.apple.com/instruments/mac/10.0/#/dev44b2b437
