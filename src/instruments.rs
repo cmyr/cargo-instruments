@@ -54,7 +54,7 @@ pub(crate) fn list() -> Result<String, Error> {
         output.push_str(name);
         if let Some(abbrv) = abbrv {
             let some_spaces = "                                              ";
-            let lpad = max_width - name.len();
+            let lpad = (max_width - name.len()).min(some_spaces.len());
             output.push_str(&some_spaces[..lpad]);
             output.push_str(&format!("({})", abbrv));
         }

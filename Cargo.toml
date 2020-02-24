@@ -1,6 +1,6 @@
 [package]
 name = "cargo-instruments"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Colin Rofls <colin@cmyr.net>"]
 license = "MIT"
 description = "Generate Xcode Instruments trace files for binary targets."
