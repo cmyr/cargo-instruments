@@ -47,6 +47,19 @@ _Open the file in Instruments.app_ (or pass `--open` to open automatically)
 $ open target/instruments/my_bin_YYYY-MM-DD-THH:MM:SS.trace
 ```
 
+### Profiling application in release mode
+
+When profiling the application in release mode the compiler doesn't provide
+debugging symbols in the default configuration.
+
+To let the compiler generate the debugging symbols even in release mode you
+can append the following section in your `Cargo.toml`.
+
+```toml
+[profile.release]
+debug = true
+```
+
 ### Templates
 
 Instruments has the concept of 'templates', which describe sets of dtrace probes
