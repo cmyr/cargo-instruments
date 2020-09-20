@@ -13,8 +13,8 @@ edition = "2018"
 
 [dependencies]
 chrono = "0.4.6"
-cargo = "0.42.0"
-failure = "0.1.5"
+cargo = "0.47.0"
+anyhow = "1.0"
 structopt = { version = "0.3", default-features = false }
 termcolor = "1.0"
 

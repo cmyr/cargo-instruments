@@ -6,14 +6,15 @@ use std::process::Command;
 use cargo::core::Workspace;
 use cargo::ops::CompileOptions;
 use cargo::util::config::Config;
-use failure::{format_err, Error};
+use cargo::util::interning::InternedString;
+use anyhow::{Result, anyhow};
 use termcolor::Color;
 
 use crate::instruments;
 use crate::opt::{CargoOpts, Opts, Target};
 
 /// The main entrance point, once args have been parsed.
-pub(crate) fn run(args: Opts) -> Result<(), Error> {
+pub(crate) fn run(args: Opts) -> Result<()> {
     use cargo::util::important_paths::find_root_manifest_for_wd;
     instruments::check_existence()?;
 
@@ -59,7 +60,7 @@ pub(crate) fn run(args: Opts) -> Result<(), Error> {
 
 /// Attempts to build the specified target. On success, returns the path to
 /// the built executable.
-fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
+fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf> {
     use cargo::core::shell::Verbosity;
     workspace.config().shell().set_verbosity(Verbosity::Normal);
 
@@ -74,30 +75,30 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf, Error> {
         result
             .tests
             .iter()
-            .find(|b| b.1.name() == bench)
-            .map(|b| b.2.clone())
-            .ok_or_else(|| format_err!("no benchmark '{}'", bench))
+            .find(|b| b.0.target.name() == bench)
+            .map(|b| b.1.clone())
+            .ok_or_else(|| anyhow!("no benchmark '{}'", bench))
     } else {
         match result.binaries.as_slice() {
-            [path] => Ok(path.clone()),
-            [] => Err(format_err!("no targets found")),
-            other => Err(format_err!("found multiple targets: {:?}", other)),
+            [path] => Ok(path.1.clone()),
+            [] => Err(anyhow!("no targets found")),
+            other => Err(anyhow!("found multiple targets: {:?}", other)),
         }
     }
 }
 
 /// Generate the `CompileOptions`. This is mostly about applying filters based
 /// on user args, so we build as little as possible.
-fn make_compile_opts<'a>(
+fn make_compile_opts (
     cargo_args: &CargoOpts,
-    cfg: &'a Config,
-) -> Result<CompileOptions<'a>, Error> {
-    use cargo::core::compiler::{CompileMode, ProfileKind};
+    cfg: &Config,
+) -> Result<CompileOptions> {
+    use cargo::core::compiler::CompileMode;
     use cargo::ops::CompileFilter;
 
     let mut opts = CompileOptions::new(cfg, CompileMode::Build)?;
-    let profile = if cargo_args.release { ProfileKind::Release } else { ProfileKind::Dev };
-    opts.build_config.profile_kind = profile;
+    let profile = if cargo_args.release { "release" } else { "dev" };
+    opts.build_config.requested_profile = InternedString::new(profile);
     if cargo_args.target != Target::Main {
         let (bins, examples, benches) = match &cargo_args.target {
             Target::Bin(bin) => (vec![bin.clone()], vec![], vec![]),
@@ -124,7 +125,7 @@ fn make_compile_opts<'a>(
 
 /// Searches the workspace for the named target, returning an Error if it can't
 /// be found.
-fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> {
+fn validate_target(target: &Target, workspace: &Workspace) -> Result<()> {
     let package = workspace.current()?;
     let mut targets = package.targets().iter();
     let has_target = match target {
@@ -134,17 +135,17 @@ fn validate_target(target: &Target, workspace: &Workspace) -> Result<(), Error> 
         Target::Bench(name) => targets.any(|t| t.is_bench() && t.name() == name),
     };
     if !has_target {
-        Err(format_err!("missing target {}", target))
+        Err(anyhow!("missing target {}", target))
     } else {
         Ok(())
     }
 }
 
-fn open_file(file: &PathBuf) -> Result<(), Error> {
+fn open_file(file: &PathBuf) -> Result<()> {
     let status = Command::new("open").arg(file).status()?;
 
     if !status.success() {
-        return Err(format_err!("open failed"));
+        return Err(anyhow!("open failed"));
     }
     Ok(())
 }
