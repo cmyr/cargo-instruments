@@ -4,30 +4,28 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
-use failure::{format_err, Error};
+use anyhow::{Result, anyhow};
 
 use crate::opt::Opts;
 
 /// Check that `instruments` is in $PATH.
-pub(crate) fn check_existence() -> Result<(), Error> {
+pub(crate) fn check_existence() -> Result<()> {
     let path = ["/", "usr", "bin", "instruments"].iter().collect::<PathBuf>();
     if path.exists() {
         Ok(())
     } else {
-        Err(format_err!(
-            "/usr/bin/instruments does not exist. \
-             Please install the Xcode Command Line Tools."
-        ))
+        Err(anyhow!("/usr/bin/instruments does not exist. \
+             Please install the Xcode Command Line Tools."))
     }
 }
 
 /// Return a string listing available templates.
-pub(crate) fn list() -> Result<String, Error> {
+pub(crate) fn list() -> Result<String> {
     let Output { status, stdout, .. } =
         Command::new("instruments").args(&["-s", "templates"]).output()?;
 
     if !status.success() {
-        return Err(format_err!("'instruments -s templates' command errored"));
+        return Err(anyhow!("'instruments -s templates' command errored"));
     }
 
     let templates = String::from_utf8(stdout)?;
@@ -42,7 +40,7 @@ pub(crate) fn list() -> Result<String, Error> {
         .collect::<Vec<_>>();
 
     if templates.is_empty() {
-        return Err(format_err!("no templates returned from 'instruments -s templates'"));
+        return Err(anyhow!("no templates returned from 'instruments -s templates'"));
     }
 
     let max_width = templates.iter().map(|(l, _)| l.len()).max().unwrap();
@@ -67,7 +65,7 @@ pub(crate) fn run(
     args: &Opts,
     exec_path: PathBuf,
     workspace_root: &PathBuf,
-) -> Result<PathBuf, Error> {
+) -> Result<PathBuf> {
     let outfile = get_out_file(args, &exec_path, &workspace_root)?;
     let template = resolve_template(&args);
 
@@ -89,7 +87,7 @@ pub(crate) fn run(
     if !output.status.success() {
         let stderr =
             String::from_utf8(output.stderr).unwrap_or_else(|_| "failed to capture stderr".into());
-        Err(format_err!("instruments errored: {}", stderr))
+        Err(anyhow!("instruments errored: {}", stderr))
     } else {
         Ok(outfile)
     }
@@ -99,7 +97,7 @@ fn get_out_file(
     args: &Opts,
     exec_path: &PathBuf,
     workspace_root: &PathBuf,
-) -> Result<PathBuf, Error> {
+) -> Result<PathBuf> {
     if let Some(path) = args.output.clone() {
         return Ok(path);
     }
@@ -107,7 +105,7 @@ fn get_out_file(
     let exec_name = exec_path
         .file_stem()
         .and_then(|s| s.to_str())
-        .ok_or_else(|| format_err!("invalid exec path {:?}", exec_path))?;
+        .ok_or_else(|| anyhow!("invalid exec path {:?}", exec_path))?;
 
     let filename = format!("{}_{}", exec_name, now_timestamp());
     let mut path = get_target_dir(workspace_root)?;
@@ -116,13 +114,13 @@ fn get_out_file(
     Ok(path)
 }
 
-fn get_target_dir(workspace_root: &PathBuf) -> Result<PathBuf, Error> {
+fn get_target_dir(workspace_root: &PathBuf) -> Result<PathBuf> {
     let mut target_dir = workspace_root.clone();
     target_dir.push("target");
     target_dir.push("instruments");
     if !target_dir.exists() {
         fs::create_dir_all(&target_dir)
-            .map_err(|e| format_err!("failed to create {:?}: {}", &target_dir, e))?;
+            .map_err(|e| anyhow!("failed to create {:?}: {}", &target_dir, e))?;
     }
     Ok(target_dir)
 }
