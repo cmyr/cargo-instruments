@@ -52,6 +52,10 @@ pub(crate) struct Opts {
     #[structopt(long)]
     pub(crate) open: bool,
 
+    /// Features to pass to cargo.
+    #[structopt(long, value_name = "CARGO-FEATURES")]
+    pub(crate) features: Option<String>,
+
     /// Arguments passed to the target binary. To pass flags, precede child args
     /// with --, e.g. `cargo instruments -- -t test1.txt --slow-mode`.
     #[structopt(value_name = "ARGS")]
@@ -82,12 +86,14 @@ impl fmt::Display for Target {
 pub(crate) struct CargoOpts {
     pub(crate) target: Target,
     pub(crate) release: bool,
+    pub(crate) features: Vec<String>,
 }
 
 impl Opts {
     pub(crate) fn to_cargo_opts(&self) -> CargoOpts {
         let target = self.get_target();
-        CargoOpts { target, release: self.release }
+        let features = self.split_features();
+        CargoOpts { target, release: self.release, features }
     }
 
     fn get_target(&self) -> Target {
@@ -100,6 +106,15 @@ impl Opts {
         } else {
             Target::Main
         }
+    }
+
+    fn split_features(&self) -> Vec<String> {
+        self.features.as_ref().iter().flat_map(|s| {
+            s.split(|s| s == ' ' || s == ',')
+                .filter(|s| !s.is_empty())
+                .map(String::from)
+        }).collect()
+
     }
 }
 
@@ -139,6 +154,16 @@ mod tests {
         assert_eq!(opts.limit, Some(808));
         let opts = Opts::from_iter(&["instruments"]);
         assert_eq!(opts.limit, None);
+    }
+
+    #[test]
+    fn features() {
+        let opts = &["instruments", "--example", "hello", "--features", "svg im", "--", "hi"];
+        let opts = Opts::from_iter(opts);
+        assert_eq!(opts.template, "time");
+        assert_eq!(opts.example, Some("hello".to_string()));
+        assert_eq!(opts.features, Some("svg im".to_string()));
+        assert_eq!(opts.to_cargo_opts().features, vec!["svg", "im"]);
     }
 
     #[test]

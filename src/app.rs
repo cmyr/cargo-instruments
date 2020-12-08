@@ -99,6 +99,7 @@ fn make_compile_opts (
     let mut opts = CompileOptions::new(cfg, CompileMode::Build)?;
     let profile = if cargo_args.release { "release" } else { "dev" };
     opts.build_config.requested_profile = InternedString::new(profile);
+    opts.features = cargo_args.features.clone();
     if cargo_args.target != Target::Main {
         let (bins, examples, benches) = match &cargo_args.target {
             Target::Bin(bin) => (vec![bin.clone()], vec![], vec![]),
