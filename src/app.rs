@@ -3,11 +3,11 @@
 use std::path::PathBuf;
 use std::process::Command;
 
+use anyhow::{anyhow, Result};
 use cargo::core::Workspace;
 use cargo::ops::CompileOptions;
 use cargo::util::config::Config;
 use cargo::util::interning::InternedString;
-use anyhow::{Result, anyhow};
 use termcolor::Color;
 
 use crate::instruments;
@@ -89,10 +89,7 @@ fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf> {
 
 /// Generate the `CompileOptions`. This is mostly about applying filters based
 /// on user args, so we build as little as possible.
-fn make_compile_opts (
-    cargo_args: &CargoOpts,
-    cfg: &Config,
-) -> Result<CompileOptions> {
+fn make_compile_opts(cargo_args: &CargoOpts, cfg: &Config) -> Result<CompileOptions> {
     use cargo::core::compiler::CompileMode;
     use cargo::ops::CompileFilter;
 

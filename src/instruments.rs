@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 use crate::opt::Opts;
 
@@ -14,8 +14,10 @@ pub(crate) fn check_existence() -> Result<()> {
     if path.exists() {
         Ok(())
     } else {
-        Err(anyhow!("/usr/bin/instruments does not exist. \
-             Please install the Xcode Command Line Tools."))
+        Err(anyhow!(
+            "/usr/bin/instruments does not exist. \
+             Please install the Xcode Command Line Tools."
+        ))
     }
 }
 
@@ -61,11 +63,7 @@ pub(crate) fn list() -> Result<String> {
     Ok(output)
 }
 
-pub(crate) fn run(
-    args: &Opts,
-    exec_path: PathBuf,
-    workspace_root: &PathBuf,
-) -> Result<PathBuf> {
+pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: &PathBuf) -> Result<PathBuf> {
     let outfile = get_out_file(args, &exec_path, &workspace_root)?;
     let template = resolve_template(&args);
 
@@ -93,11 +91,7 @@ pub(crate) fn run(
     }
 }
 
-fn get_out_file(
-    args: &Opts,
-    exec_path: &PathBuf,
-    workspace_root: &PathBuf,
-) -> Result<PathBuf> {
+fn get_out_file(args: &Opts, exec_path: &PathBuf, workspace_root: &PathBuf) -> Result<PathBuf> {
     if let Some(path) = args.output.clone() {
         return Ok(path);
     }

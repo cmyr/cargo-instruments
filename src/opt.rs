@@ -109,12 +109,13 @@ impl Opts {
     }
 
     fn split_features(&self) -> Vec<String> {
-        self.features.as_ref().iter().flat_map(|s| {
-            s.split(|s| s == ' ' || s == ',')
-                .filter(|s| !s.is_empty())
-                .map(String::from)
-        }).collect()
-
+        self.features
+            .as_ref()
+            .iter()
+            .flat_map(|s| {
+                s.split(|s| s == ' ' || s == ',').filter(|s| !s.is_empty()).map(String::from)
+            })
+            .collect()
     }
 }
 
