@@ -140,7 +140,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-instruments"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "cargo",
