@@ -40,6 +40,8 @@ pub(crate) fn run(args: Opts) -> Result<()> {
     let relpath = exec_path.strip_prefix(&workspace_root).unwrap_or_else(|_| exec_path.as_path());
     workspace.config().shell().status("Profiling", relpath.to_string_lossy())?;
 
+    ctrlc::set_handler(move || {})?;
+
     let trace_path = match instruments::run(&args, exec_path, &workspace_root) {
         Ok(path) => path,
         Err(e) => {

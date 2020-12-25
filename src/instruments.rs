@@ -1,8 +1,8 @@
 //! interfacing with the `instruments` command line tool
 
-use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
+use std::{fs, process};
 
 use anyhow::{anyhow, Result};
 
@@ -67,13 +67,30 @@ pub(crate) fn run(args: &Opts, exec_path: PathBuf, workspace_root: &PathBuf) -> 
     let outfile = get_out_file(args, &exec_path, &workspace_root)?;
     let template = resolve_template(&args);
 
-    let mut command = Command::new("instruments");
-    command.args(&["-t", &template]).arg("-D").arg(&outfile);
+    let mut command = Command::new("ps");
+    command.arg("otty=").arg(process::id().to_string());
+    let tty = String::from_utf8(command.output()?.stdout)?
+        .split_whitespace()
+        .next()
+        .map(|tty| format!("/dev/{}", tty));
 
-    if let Some(limit) = args.limit {
-        command.args(&["-l", &limit.to_string()]);
+    let mut command = Command::new("xcrun");
+    command
+        .arg("xctrace")
+        .arg("record")
+        .args(&["--template", &template])
+        .arg("--output")
+        .arg(&outfile);
+
+    if let Some(tty) = tty {
+        command.args(&["--target-stdin", &tty, "--target-stdout", &tty]);
     }
 
+    if let Some(limit) = args.limit {
+        command.args(&["--time-limit", &limit.to_string()]);
+    }
+
+    command.args(&["--launch", "--"]);
     command.arg(&exec_path);
 
     if !args.target_args.is_empty() {
