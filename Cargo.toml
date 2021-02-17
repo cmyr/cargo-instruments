@@ -1,6 +1,6 @@
 [package]
 name = "cargo-instruments"
-version = "0.3.4"
+version = "0.3.5"
 authors = ["Colin Rofls <colin@cmyr.net>"]
 license = "MIT"
 description = "Generate Xcode Instruments trace files for binary targets."
@@ -13,7 +13,7 @@ edition = "2018"
 
 [dependencies]
 chrono = "0.4.6"
-cargo = "0.47.0"
+cargo = "0.50.0"
 anyhow = "1.0"
 structopt = { version = "0.3", default-features = false }
 termcolor = "1.0"
