@@ -1,111 +1,151 @@
 //! The main application logic.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{anyhow, Result};
-use cargo::core::Workspace;
-use cargo::ops::CompileOptions;
-use cargo::util::config::Config;
-use cargo::util::interning::InternedString;
+use cargo::{
+    core::Workspace,
+    ops::CompileOptions,
+    util::{config::Config, important_paths, interning::InternedString},
+};
 use termcolor::Color;
 
 use crate::instruments;
-use crate::opt::{CargoOpts, Opts, Target};
+use crate::opt::{AppConfig, CargoOpts, Target};
 
-/// The main entrance point, once args have been parsed.
-pub(crate) fn run(args: Opts) -> Result<()> {
-    use cargo::util::important_paths::find_root_manifest_for_wd;
-    instruments::check_existence()?;
+/// Main entrance point, after args have been parsed.
+pub(crate) fn run(app_config: AppConfig) -> Result<()> {
+    // 1. Detect the type of Xcode Instruments installation
+    let xctrace_tool = instruments::XcodeInstruments::detect()?;
 
-    if args.list {
-        let list = instruments::list()?;
-        println!("{}", list);
+    // 2. Render available templates if the user asked
+    if app_config.list_templates {
+        let catalog = xctrace_tool.available_templates()?;
+        println!("{}", instruments::render_template_catalog(&catalog));
         return Ok(());
     }
 
-    let cfg = Config::default()?;
-    let manifest_path = find_root_manifest_for_wd(cfg.cwd())?;
-    let workspace = Workspace::new(&manifest_path, &cfg)?;
-    let workspace_root = manifest_path.parent().unwrap().to_owned();
+    // 3. Build the specified target
+    let cargo_config = Config::default()?;
+    let manifest_path = important_paths::find_root_manifest_for_wd(cargo_config.cwd())?;
+    let workspace = Workspace::new(&manifest_path, &cargo_config)?;
 
-    let exec_path = match build_target(&args, &workspace) {
+    let cargo_options = app_config.to_cargo_opts();
+    let target_filepath = match build_target(&cargo_options, &workspace) {
         Ok(path) => path,
         Err(e) => {
             workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
-            return Ok(());
+            return Err(e);
         }
     };
 
-    let relpath = exec_path.strip_prefix(&workspace_root).unwrap_or_else(|_| exec_path.as_path());
-    workspace.config().shell().status("Profiling", relpath.to_string_lossy())?;
+    // 4. Profile the built target, will display menu if no template was selected
+    let trace_filepath =
+        match instruments::profile_target(&target_filepath, &xctrace_tool, &app_config, &workspace)
+        {
+            Ok(path) => path,
+            Err(e) => {
+                workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
+                return Ok(());
+            }
+        };
 
-    let trace_path = match instruments::run(&args, exec_path, &workspace_root) {
-        Ok(path) => path,
-        Err(e) => {
-            workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
-            return Ok(());
-        }
-    };
-
-    let reltrace =
-        trace_path.strip_prefix(&workspace_root).unwrap_or_else(|_| trace_path.as_path());
-    workspace.config().shell().status("Wrote Trace", reltrace.to_string_lossy())?;
-    if args.open {
-        workspace.config().shell().status("Opening", reltrace.to_string_lossy())?;
-        open_file(&trace_path)?;
+    // 5. Print the trace file's relative path
+    {
+        let trace_shortpath = trace_filepath
+            .strip_prefix(workspace.root().as_os_str())
+            .unwrap_or_else(|_| trace_filepath.as_path())
+            .to_string_lossy();
+        workspace.config().shell().status("Trace file", trace_shortpath)?;
     }
+
+    // 6. Open Xcode Instruments if asked
+    if app_config.open {
+        launch_instruments(&trace_filepath)?;
+    }
+
     Ok(())
 }
 
-/// Attempts to build the specified target. On success, returns the path to
-/// the built executable.
-fn build_target(args: &Opts, workspace: &Workspace) -> Result<PathBuf> {
+/// Attempts to validate and build the specified target. On success, returns
+/// the path to the built executable.
+fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<PathBuf> {
     use cargo::core::shell::Verbosity;
     workspace.config().shell().set_verbosity(Verbosity::Normal);
 
-    let cargo_args = args.to_cargo_opts();
+    validate_target(&cargo_options.target, &workspace)?;
 
-    validate_target(&cargo_args.target, workspace)?;
+    let compile_options = make_compile_opts(&cargo_options, workspace.config())?;
+    let result = cargo::ops::compile(workspace, &compile_options)?;
 
-    let opts = make_compile_opts(&cargo_args, workspace.config())?;
-
-    let result = cargo::ops::compile(workspace, &opts)?;
-    if let Target::Bench(bench) = cargo_args.target {
+    if let Target::Bench(ref bench) = cargo_options.target {
         result
             .tests
             .iter()
-            .find(|b| b.0.target.name() == bench)
-            .map(|b| b.1.clone())
+            .find(|unit_output| unit_output.unit.target.name() == bench)
+            .map(|unit_output| unit_output.path.clone())
             .ok_or_else(|| anyhow!("no benchmark '{}'", bench))
     } else {
         match result.binaries.as_slice() {
-            [path] => Ok(path.1.clone()),
+            [unit_output] => Ok(unit_output.path.clone()),
             [] => Err(anyhow!("no targets found")),
-            other => Err(anyhow!("found multiple targets: {:?}", other)),
+            other => Err(anyhow!(
+                "found multiple targets: {:?}",
+                other
+                    .iter()
+                    .map(|unit_output| unit_output.unit.target.name())
+                    .collect::<Vec<&str>>()
+            )),
         }
     }
 }
 
-/// Generate the `CompileOptions`. This is mostly about applying filters based
-/// on user args, so we build as little as possible.
-fn make_compile_opts(cargo_args: &CargoOpts, cfg: &Config) -> Result<CompileOptions> {
+/// Validate that the target can be built.
+///
+/// This searches the workspace for the provided target, returning an Error if
+/// it can't be found.
+fn validate_target(target: &Target, workspace: &Workspace) -> Result<()> {
+    let package = workspace.current()?;
+    let mut targets = package.targets().iter();
+
+    let has_target = match target {
+        Target::Main => targets.any(|t| t.is_bin()),
+        Target::Bin(name) => targets.any(|t| t.is_bin() && t.name() == name),
+        Target::Example(name) => targets.any(|t| t.is_example() && t.name() == name),
+        Target::Bench(name) => targets.any(|t| t.is_bench() && t.name() == name),
+    };
+
+    if !has_target {
+        return Err(anyhow!("missing target {}", target));
+    }
+
+    Ok(())
+}
+
+/// Generate `CompileOptions` for Cargo.
+///
+/// This additionally filters options based on user args, so that Cargo
+/// builds as little as possible.
+fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileOptions> {
     use cargo::core::compiler::CompileMode;
     use cargo::ops::CompileFilter;
 
-    let mut opts = CompileOptions::new(cfg, CompileMode::Build)?;
-    let profile = if cargo_args.release { "release" } else { "dev" };
-    opts.build_config.requested_profile = InternedString::new(profile);
-    opts.features = cargo_args.features.clone();
-    if cargo_args.target != Target::Main {
-        let (bins, examples, benches) = match &cargo_args.target {
+    let mut compile_options = CompileOptions::new(cfg, CompileMode::Build)?;
+    let profile = if cargo_options.release { "release" } else { "dev" };
+
+    compile_options.build_config.requested_profile = InternedString::new(profile);
+    compile_options.features = cargo_options.features.clone();
+
+    if cargo_options.target != Target::Main {
+        let (bins, examples, benches) = match &cargo_options.target {
             Target::Bin(bin) => (vec![bin.clone()], vec![], vec![]),
             Target::Example(bin) => (vec![], vec![bin.clone()], vec![]),
             Target::Bench(bin) => (vec![], vec![], vec![bin.clone()]),
             _ => unreachable!(),
         };
 
-        opts.filter = CompileFilter::from_raw_arguments(
+        compile_options.filter = CompileFilter::from_raw_arguments(
             false,
             bins,
             false,
@@ -118,29 +158,12 @@ fn make_compile_opts(cargo_args: &CargoOpts, cfg: &Config) -> Result<CompileOpti
             false,
         );
     }
-    Ok(opts)
+    Ok(compile_options)
 }
 
-/// Searches the workspace for the named target, returning an Error if it can't
-/// be found.
-fn validate_target(target: &Target, workspace: &Workspace) -> Result<()> {
-    let package = workspace.current()?;
-    let mut targets = package.targets().iter();
-    let has_target = match target {
-        Target::Main => targets.any(|t| t.is_bin()),
-        Target::Bin(name) => targets.any(|t| t.is_bin() && t.name() == name),
-        Target::Example(name) => targets.any(|t| t.is_example() && t.name() == name),
-        Target::Bench(name) => targets.any(|t| t.is_bench() && t.name() == name),
-    };
-    if !has_target {
-        Err(anyhow!("missing target {}", target))
-    } else {
-        Ok(())
-    }
-}
-
-fn open_file(file: &PathBuf) -> Result<()> {
-    let status = Command::new("open").arg(file).status()?;
+/// Launch Xcode Instruments on the provided trace file.
+fn launch_instruments(trace_filepath: &Path) -> Result<()> {
+    let status = Command::new("open").arg(trace_filepath).status()?;
 
     if !status.success() {
         return Err(anyhow!("open failed"));
