@@ -10,59 +10,80 @@ pub(crate) enum Cli {
     /// Profile a binary with Xcode Instruments.
     ///
     /// By default, cargo-instruments will build your main binary.
-    #[structopt(name = "instruments")]
-    Instruments(Opts),
+    #[structopt(
+        name = "instruments",
+        after_help = "EXAMPLE:\n    cargo instruments -t time    Profile main binary with the (recommended) Time Profiler."
+    )]
+    Instruments(AppConfig),
 }
 
 #[derive(Debug, StructOpt)]
 #[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
-pub(crate) struct Opts {
+pub(crate) struct AppConfig {
+    /// List available templates
+    #[structopt(short = "l", long)]
+    pub(crate) list_templates: bool,
+
     /// Specify the instruments template to run
     ///
-    /// To see available templates, pass --list.
-    #[structopt(short = "t", long, default_value = "time", value_name = "TEMPLATE")]
-    pub(crate) template: String,
+    /// To see available templates, pass `--list-templates`.
+    #[structopt(
+        short = "t",
+        long = "template",
+        value_name = "TEMPLATE",
+        required_unless = "list-templates"
+    )]
+    pub(crate) template_name: Option<String>,
+
     /// Example binary to run
     #[structopt(long, group = "target", value_name = "NAME")]
     example: Option<String>,
+
     /// Binary to run
     #[structopt(long, group = "target", value_name = "NAME")]
     bin: Option<String>,
+
     /// Benchmark target to run
     #[structopt(long, group = "target", value_name = "NAME")]
     bench: Option<String>,
+
     /// Pass --release to cargo
     #[structopt(long)]
     release: bool,
-    /// List available templates
-    #[structopt(long)]
-    pub(crate) list: bool,
-    /// Output file. If missing, defaults to 'target/instruments/{name}{date}.trace'
+
+    /// Output .trace file to the given path
     ///
-    /// This file may already exist, in which case a new Run will be added.
-    #[structopt(short = "o", long = "out", value_name = "PATH", parse(from_os_str))]
-    pub(crate) output: Option<PathBuf>,
+    /// Defaults to `target/instruments/{name}_{template-name}_{date}.trace`.
+    ///
+    /// If the file already exists, a new Run will be added.
+    #[structopt(short = "o", long = "output", value_name = "PATH", parse(from_os_str))]
+    pub(crate) trace_filepath: Option<PathBuf>,
 
-    /// Optionally limit the maximum running time of the application.
-    /// It will be terminated if this is exceded.
-    #[structopt(short = "l", long, value_name = "MILLIS")]
-    pub(crate) limit: Option<usize>,
+    /// Limit recording time to the specified value (in milliseconds)
+    ///
+    /// The program will be terminated after this limit is exceeded.
+    #[structopt(long, value_name = "MILLIS")]
+    pub(crate) time_limit: Option<usize>,
 
-    /// Open the generated .trace file when finished
+    /// Open the generated .trace file after profiling
+    ///
+    /// The trace file will open in Xcode Instruments.
     #[structopt(long)]
     pub(crate) open: bool,
 
-    /// Features to pass to cargo.
+    /// Features to pass to cargo
     #[structopt(long, value_name = "CARGO-FEATURES")]
     pub(crate) features: Option<String>,
 
-    /// Arguments passed to the target binary. To pass flags, precede child args
-    /// with --, e.g. `cargo instruments -- -t test1.txt --slow-mode`.
+    /// Arguments passed to the target binary.
+    ///
+    /// To pass flags, precede child args with `--`,
+    /// e.g. `cargo instruments -- -t test1.txt --slow-mode`.
     #[structopt(value_name = "ARGS")]
     pub(crate) target_args: Vec<String>,
 }
 
-/// The target, parsed from args.
+/// Represents the kind of target to profile.
 #[derive(Debug, PartialEq)]
 pub(crate) enum Target {
     Main,
@@ -89,7 +110,7 @@ pub(crate) struct CargoOpts {
     pub(crate) features: Vec<String>,
 }
 
-impl Opts {
+impl AppConfig {
     pub(crate) fn to_cargo_opts(&self) -> CargoOpts {
         let target = self.get_target();
         let features = self.split_features();
@@ -97,12 +118,12 @@ impl Opts {
     }
 
     fn get_target(&self) -> Target {
-        if let Some(example) = self.example.clone() {
-            Target::Example(example)
-        } else if let Some(bin) = self.bin.clone() {
-            Target::Bin(bin)
-        } else if let Some(bench) = self.bench.clone() {
-            Target::Bench(bench)
+        if let Some(ref example) = self.example {
+            Target::Example(example.clone())
+        } else if let Some(ref bin) = self.bin {
+            Target::Bin(bin.clone())
+        } else if let Some(ref bench) = self.bench {
+            Target::Bench(bench.clone())
         } else {
             Target::Main
         }
@@ -125,43 +146,61 @@ mod tests {
 
     #[test]
     fn defaults() {
-        let opts = Opts::from_iter(&["instruments"]);
-        assert_eq!(opts.template.as_str(), "time");
+        let opts = AppConfig::from_iter(&["instruments", "-t", "template"]);
         assert!(opts.example.is_none());
         assert!(opts.bin.is_none());
         assert!(!opts.release);
-        assert!(opts.output.is_none());
+        assert!(opts.trace_filepath.is_none());
     }
 
     #[test]
     #[should_panic(expected = "cannot be used with one or more of the other")]
     fn group_is_exclusive() {
-        let opts = Opts::from_iter(&["instruments", "--bin", "bin_arg"]);
+        let opts = AppConfig::from_iter(&["instruments", "-t", "time", "--bin", "bin_arg"]);
         assert!(opts.example.is_none());
         assert_eq!(opts.bin.unwrap().as_str(), "bin_arg");
 
-        let opts = Opts::from_iter(&["instruments", "--example", "example_binary"]);
+        let opts =
+            AppConfig::from_iter(&["instruments", "-t", "time", "--example", "example_binary"]);
         assert!(opts.bin.is_none());
         assert_eq!(opts.example.unwrap().as_str(), "example_binary");
-        let _opts =
-            Opts::from_iter_safe(&["instruments", "--bin", "thing", "--example", "other"]).unwrap();
+        let _opts = AppConfig::from_iter_safe(&[
+            "instruments",
+            "-t",
+            "time",
+            "--bin",
+            "thing",
+            "--example",
+            "other",
+        ])
+        .unwrap();
     }
 
     #[test]
     fn limit_millis() {
-        let opts = Opts::from_iter(&["instruments", "-l", "420"]);
-        assert_eq!(opts.limit, Some(420));
-        let opts = Opts::from_iter(&["instruments", "--limit", "808"]);
-        assert_eq!(opts.limit, Some(808));
-        let opts = Opts::from_iter(&["instruments"]);
-        assert_eq!(opts.limit, None);
+        let opts = AppConfig::from_iter(&["instruments", "-t", "time", "--time-limit", "42000"]);
+        assert_eq!(opts.time_limit, Some(42000));
+        let opts = AppConfig::from_iter(&["instruments", "-t", "time", "--time-limit", "808"]);
+        assert_eq!(opts.time_limit, Some(808));
+        let opts = AppConfig::from_iter(&["instruments", "-t", "time"]);
+        assert_eq!(opts.time_limit, None);
     }
 
     #[test]
     fn features() {
-        let opts = &["instruments", "--example", "hello", "--features", "svg im", "--", "hi"];
-        let opts = Opts::from_iter(opts);
-        assert_eq!(opts.template, "time");
+        let opts = &[
+            "instruments",
+            "--template",
+            "time",
+            "--example",
+            "hello",
+            "--features",
+            "svg im",
+            "--",
+            "hi",
+        ];
+        let opts = AppConfig::from_iter(opts);
+        assert_eq!(opts.template_name, Some("time".into()));
         assert_eq!(opts.example, Some("hello".to_string()));
         assert_eq!(opts.features, Some("svg im".to_string()));
         assert_eq!(opts.to_cargo_opts().features, vec!["svg", "im"]);
@@ -169,19 +208,19 @@ mod tests {
 
     #[test]
     fn var_args() {
-        let opts = Opts::from_iter(&[
+        let opts = AppConfig::from_iter(&[
             "instruments",
             "-t",
             "alloc",
-            "--limit",
+            "--time-limit",
             "808",
             "--",
             "hi",
             "-h",
             "--bin",
         ]);
-        assert_eq!(opts.template, "alloc");
-        assert_eq!(opts.limit, Some(808));
+        assert_eq!(opts.template_name, Some("alloc".into()));
+        assert_eq!(opts.time_limit, Some(808));
         assert_eq!(opts.target_args, vec!["hi", "-h", "--bin"]);
     }
 }

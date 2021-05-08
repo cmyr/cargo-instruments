@@ -1,22 +1,21 @@
 [package]
 name = "cargo-instruments"
-version = "0.3.4"
+version = "0.4.0"
 authors = ["Colin Rofls <colin@cmyr.net>"]
 license = "MIT"
-description = "Generate Xcode Instruments trace files for binary targets."
+description = "Profile binary targets on macOS using Xcode Instruments."
 repository = "https://github.com/cmyr/cargo-instruments"
 documentation = "https://github.com/cmyr/cargo-instruments"
 categories = ["development-tools::cargo-plugins", "development-tools::profiling"]
-keywords = ["profiling", "xcode", "instruments", "macos"]
+keywords = ["profiling", "xcode", "cargo-subcommand", "instruments", "trace", "xctrace", "macos"]
 readme = "README.md"
 edition = "2018"
 
 [dependencies]
-chrono = "0.4.6"
-cargo = "0.47.0"
 anyhow = "1.0"
-structopt = { version = "0.3", default-features = false }
+cargo = "0.52"
+chrono = "0.4.6"
+dialoguer = "^0.8.0"
+structopt = { version = "^0.3", default-features = false }
+semver = "^0.9"
 termcolor = "1.0"
-
-[features]
-vendored-openssl = ["cargo/vendored-openssl"]
