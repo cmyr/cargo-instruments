@@ -68,8 +68,12 @@ pub(crate) struct AppConfig {
     /// Open the generated .trace file after profiling
     ///
     /// The trace file will open in Xcode Instruments.
-    #[structopt(long)]
+    #[structopt(long, hidden = true)]
     pub(crate) open: bool,
+
+    /// Do not open the generated trace file in Instruments.app.
+    #[structopt(long)]
+    pub(crate) no_open: bool,
 
     /// Features to pass to cargo
     #[structopt(long, value_name = "CARGO-FEATURES")]

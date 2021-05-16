@@ -31,6 +31,16 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     let manifest_path = important_paths::find_root_manifest_for_wd(cargo_config.cwd())?;
     let workspace = Workspace::new(&manifest_path, &cargo_config)?;
 
+    // 3.1: warn if --open passed. We do this here so we have access to cargo's
+    // pretty-printer
+    if app_config.open {
+        workspace.config().shell().status_with_color(
+            "Warning",
+            "--open is now the default behaviour, and will be ignored.",
+            Color::Yellow,
+        )?;
+    }
+
     let cargo_options = app_config.to_cargo_opts();
     let target_filepath = match build_target(&cargo_options, &workspace) {
         Ok(path) => path,
@@ -61,7 +71,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     }
 
     // 6. Open Xcode Instruments if asked
-    if app_config.open {
+    if !app_config.no_open {
         launch_instruments(&trace_filepath)?;
     }
 
