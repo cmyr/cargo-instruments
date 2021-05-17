@@ -81,7 +81,7 @@ impl XcodeInstruments {
         template_name: &str,
         trace_filepath: &Path,
         time_limit: Option<usize>,
-    ) -> Command {
+    ) -> Result<Command> {
         match self {
             XcodeInstruments::XcTrace => {
                 let mut command = Command::new("xcrun");
@@ -95,10 +95,13 @@ impl XcodeInstruments {
                 }
 
                 command.args(&["--output", &trace_filepath.to_str().unwrap()]);
+                // redirect stdin & err to the user's terminal
+                if let Some(tty) = get_tty()? {
+                    command.args(&["--target-stdin", &tty, "--target-stdout", &tty]);
+                }
 
                 command.args(&["--launch", "--"]);
-
-                command
+                Ok(command)
             }
             XcodeInstruments::InstrumentsBinary => {
                 let mut command = Command::new("instruments");
@@ -109,8 +112,7 @@ impl XcodeInstruments {
                 if let Some(limit) = time_limit {
                     command.args(&["-l", &limit.to_string()]);
                 }
-
-                command
+                Ok(command)
             }
         }
     }
@@ -436,7 +438,7 @@ pub(crate) fn profile_target(
     }
 
     let mut command =
-        xctrace_tool.profiling_command(&template_name, &trace_filepath, app_config.time_limit);
+        xctrace_tool.profiling_command(&template_name, &trace_filepath, app_config.time_limit)?;
 
     command.arg(&target_filepath);
 
@@ -453,4 +455,14 @@ pub(crate) fn profile_target(
     }
 
     Ok(trace_filepath)
+}
+
+/// get the tty of th current terminal session
+fn get_tty() -> Result<Option<String>> {
+    let mut command = Command::new("ps");
+    command.arg("otty=").arg(std::process::id().to_string());
+    Ok(String::from_utf8(command.output()?.stdout)?
+        .split_whitespace()
+        .next()
+        .map(|tty| format!("/dev/{}", tty)))
 }
