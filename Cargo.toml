@@ -7,15 +7,14 @@ description = "Profile binary targets on macOS using Xcode Instruments."
 repository = "https://github.com/cmyr/cargo-instruments"
 documentation = "https://github.com/cmyr/cargo-instruments"
 categories = ["development-tools::cargo-plugins", "development-tools::profiling"]
-keywords = ["profiling", "xcode", "cargo-subcommand", "instruments", "trace", "xctrace", "macos"]
+keywords = ["profiling", "xcode", "cargo-subcommand", "trace", "macos"]
 readme = "README.md"
 edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-cargo = "0.52"
+cargo = "0.53"
 chrono = "0.4.6"
-dialoguer = "^0.8.0"
 structopt = { version = "^0.3", default-features = false }
-semver = "^0.9"
+semver = "0.11"
 termcolor = "1.0"
