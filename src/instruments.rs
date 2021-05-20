@@ -146,8 +146,8 @@ fn semver_from_utf8(version: &[u8]) -> Result<Version> {
 
     let version_string = std::str::from_utf8(version)?;
     match version_string.split('.').count() {
-        1 => to_semver(&format!("{}.0.0", version_string.trim_end_matches('\n'))),
-        2 => to_semver(&format!("{}.0", version_string.trim_end_matches('\n'))),
+        1 => to_semver(&format!("{}.0.0", version_string.trim())),
+        2 => to_semver(&format!("{}.0", version_string.trim())),
         3 => to_semver(version_string),
         _ => Err(anyhow!("invalid version: {}", version_string)),
     }
