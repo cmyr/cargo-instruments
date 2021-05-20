@@ -130,10 +130,27 @@ fn get_macos_version() -> Result<Version> {
         return Err(anyhow!("macOS version cannot be determined"));
     }
 
-    let version_string = std::str::from_utf8(&stdout)?;
-    Version::parse(&version_string).map_err(|error| {
-        anyhow!("cannot parse version: `{}`, because of {}", version_string, error)
-    })
+    semver_from_utf8(&stdout)
+}
+
+/// Returns a semver given a slice of bytes
+///
+/// This function tries to construct a semver struct given a raw utf8 byte array
+/// that may not contain a patch number, `"11.1"` is parsed as `"11.1.0"`.
+fn semver_from_utf8(version: &[u8]) -> Result<Version> {
+    let to_semver = |version_string: &str| {
+        Version::parse(&version_string).map_err(|error| {
+            anyhow!("cannot parse version: `{}`, because of {}", version_string, error)
+        })
+    };
+
+    let version_string = std::str::from_utf8(version)?;
+    match version_string.split('.').count() {
+        1 => to_semver(&format!("{}.0.0", version_string.trim_end_matches('\n'))),
+        2 => to_semver(&format!("{}.0", version_string.trim_end_matches('\n'))),
+        3 => to_semver(version_string),
+        _ => Err(anyhow!("invalid version: {}", version_string)),
+    }
 }
 
 /// Parse xctrace template listing.
@@ -465,4 +482,16 @@ fn get_tty() -> Result<Option<String>> {
         .split_whitespace()
         .next()
         .map(|tty| format!("/dev/{}", tty)))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn semvers_can_be_parsed() {
+        assert_eq!(semver_from_utf8(b"2.3.4").unwrap(), Version::parse("2.3.4").unwrap());
+        assert_eq!(semver_from_utf8(b"11.1").unwrap(), Version::parse("11.1.0").unwrap());
+        assert_eq!(semver_from_utf8(b"11").unwrap(), Version::parse("11.0.0").unwrap());
+    }
 }
