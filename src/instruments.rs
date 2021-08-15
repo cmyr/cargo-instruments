@@ -87,14 +87,14 @@ impl XcodeInstruments {
                 let mut command = Command::new("xcrun");
                 command.args(&["xctrace", "record"]);
 
-                command.args(&["--template", &template_name]);
+                command.args(&["--template", template_name]);
 
                 if let Some(limit_millis) = time_limit {
                     let limit_millis_str = format!("{}ms", limit_millis);
                     command.args(&["--time-limit", &limit_millis_str]);
                 }
 
-                command.args(&["--output", &trace_filepath.to_str().unwrap()]);
+                command.args(&["--output", trace_filepath.to_str().unwrap()]);
                 // redirect stdin & err to the user's terminal
                 if let Some(tty) = get_tty()? {
                     command.args(&["--target-stdin", &tty, "--target-stdout", &tty]);
@@ -105,7 +105,7 @@ impl XcodeInstruments {
             }
             XcodeInstruments::InstrumentsBinary => {
                 let mut command = Command::new("instruments");
-                command.args(&["-t", &template_name]);
+                command.args(&["-t", template_name]);
 
                 command.arg("-D").arg(&trace_filepath);
 
@@ -139,7 +139,7 @@ fn get_macos_version() -> Result<Version> {
 /// that may not contain a patch number, `"11.1"` is parsed as `"11.1.0"`.
 fn semver_from_utf8(version: &[u8]) -> Result<Version> {
     let to_semver = |version_string: &str| {
-        Version::parse(&version_string).map_err(|error| {
+        Version::parse(version_string).map_err(|error| {
             anyhow!("cannot parse version: `{}`, because of {}", version_string, error)
         })
     };
@@ -439,7 +439,7 @@ pub(crate) fn profile_target(
     let workspace_root = workspace.root().to_path_buf();
     let trace_filepath = prepare_trace_filepath(
         target_filepath,
-        &template_name,
+        template_name,
         app_config,
         workspace_root.as_path(),
     )?;
@@ -455,7 +455,7 @@ pub(crate) fn profile_target(
     }
 
     let mut command =
-        xctrace_tool.profiling_command(&template_name, &trace_filepath, app_config.time_limit)?;
+        xctrace_tool.profiling_command(template_name, &trace_filepath, app_config.time_limit)?;
 
     command.arg(&target_filepath);
 
