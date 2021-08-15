@@ -84,9 +84,9 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
     use cargo::core::shell::Verbosity;
     workspace.config().shell().set_verbosity(Verbosity::Normal);
 
-    validate_target(&cargo_options.target, &workspace)?;
+    validate_target(&cargo_options.target, workspace)?;
 
-    let compile_options = make_compile_opts(&cargo_options, workspace.config())?;
+    let compile_options = make_compile_opts(cargo_options, workspace.config())?;
     let result = cargo::ops::compile(workspace, &compile_options)?;
 
     if let Target::Bench(ref bench) = cargo_options.target {
