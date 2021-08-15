@@ -50,6 +50,22 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         }
     };
 
+    // 3.2: Ad-hoc code sign the target so instruments can run
+    let codesign_output =
+        Command::new("codesign").args(&["-s", "-", target_filepath.to_str().unwrap()]).output()?;
+    if !codesign_output.status.success() {
+        workspace.config().shell().status_with_color(
+            "Code Sign Failed - Stdout",
+            String::from_utf8(codesign_output.stdout)?,
+            Color::Black,
+        )?;
+        workspace.config().shell().status_with_color(
+            "Code Sign Failed - Stderr",
+            String::from_utf8(codesign_output.stderr)?,
+            Color::Red,
+        )?;
+    }
+
     // 4. Profile the built target, will display menu if no template was selected
     let trace_filepath =
         match instruments::profile_target(&target_filepath, &xctrace_tool, &app_config, &workspace)
