@@ -50,6 +50,9 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         }
     };
 
+    #[cfg(target_arch = "aarch64")]
+    codesign(&target_filepath, &workspace)?;
+
     // 4. Profile the built target, will display menu if no template was selected
     let trace_filepath =
         match instruments::profile_target(&target_filepath, &xctrace_tool, &app_config, &workspace)
@@ -75,6 +78,47 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         launch_instruments(&trace_filepath)?;
     }
 
+    Ok(())
+}
+
+/// On M1 we need to resign with the specified entitlement.
+///
+/// See https://github.com/cmyr/cargo-instruments/issues/40#issuecomment-894287229
+/// for more information.
+#[cfg(target_arch = "aarch64")]
+fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
+    static ENTITLEMENTS_FILENAME: &str = "entitlements.plist";
+    static ENTITLEMENTS_PLIST_DATA: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>com.apple.security.get-task-allow</key>
+        <true/>
+    </dict>
+</plist>"#;
+
+    let target_dir = path.parent().ok_or_else(|| anyhow!("failed to get target directory"))?;
+    let entitlement_path = target_dir.join(ENTITLEMENTS_FILENAME);
+    std::fs::write(&entitlement_path, ENTITLEMENTS_PLIST_DATA.as_bytes())?;
+
+    let output = Command::new("codesign")
+        .args(&["-s", "-", "-f", "--entitlements"])
+        .args([&entitlement_path, path])
+        .output()?;
+    if !output.status.success() {
+        let mut msg = String::new();
+        if !output.stdout.is_empty() {
+            msg = format!("stdout: \"{}\"", String::from_utf8_lossy(&output.stdout));
+        }
+        if !output.stderr.is_empty() {
+            if !msg.is_empty() {
+                msg.push('\n');
+            }
+            msg.push_str(&format!("stderr: \"{}\"", String::from_utf8_lossy(&output.stderr)));
+        }
+
+        workspace.config().shell().status_with_color("Code signing failed", msg, Color::Red)?;
+    }
     Ok(())
 }
 
