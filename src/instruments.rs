@@ -388,10 +388,10 @@ fn prepare_trace_filepath(
             .file_stem()
             .and_then(|s| s.to_str())
             .ok_or_else(|| anyhow!("invalid target path {:?}", target_filepath))?;
-        let template_name_escaped = template_name.replace(' ', "-");
+        let template_name = template_name.replace(' ', "-");
         let now = chrono::Local::now();
 
-        format!("{}_{}_{}.trace", target_shortname, template_name_escaped, now.format("%FT%T"))
+        format!("{}_{}_{}.trace", target_shortname, template_name, now.format("%F_%H%M%S-%3f"))
     };
 
     let trace_filepath = trace_dir.join(trace_filename);
