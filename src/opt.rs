@@ -82,11 +82,11 @@ pub(crate) struct AppConfig {
     pub(crate) features: Option<String>,
 
     /// Activate all features for the selected target.
-    #[structopt(long)]
+    #[structopt(long, display_order = 1001)]
     pub(crate) all_features: bool,
 
     /// Do not activate the default features for the selected target
-    #[structopt(long)]
+    #[structopt(long, display_order = 1001)]
     pub(crate) no_default_features: bool,
 
     /// Arguments passed to the target binary.
