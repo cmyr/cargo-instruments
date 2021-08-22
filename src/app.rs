@@ -41,7 +41,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         )?;
     }
 
-    let cargo_options = app_config.to_cargo_opts();
+    let cargo_options = app_config.to_cargo_opts()?;
     let target_filepath = match build_target(&cargo_options, &workspace) {
         Ok(path) => path,
         Err(e) => {
@@ -189,7 +189,7 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
     let profile = if cargo_options.release { "release" } else { "dev" };
 
     compile_options.build_config.requested_profile = InternedString::new(profile);
-    compile_options.features = cargo_options.features.clone();
+    compile_options.cli_features = cargo_options.features.clone();
 
     if cargo_options.target != Target::Main {
         let (bins, examples, benches) = match &cargo_options.target {

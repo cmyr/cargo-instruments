@@ -1,5 +1,7 @@
 //! CLI argument handling
 
+use anyhow::Result;
+use cargo::core::resolver::CliFeatures;
 use std::fmt;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -75,9 +77,17 @@ pub(crate) struct AppConfig {
     #[structopt(long)]
     pub(crate) no_open: bool,
 
-    /// Features to pass to cargo
+    /// Features to pass to cargo.
     #[structopt(long, value_name = "CARGO-FEATURES")]
     pub(crate) features: Option<String>,
+
+    /// Activate all features for the selected target.
+    #[structopt(long)]
+    pub(crate) all_features: bool,
+
+    /// Do not activate the default features for the selected target
+    #[structopt(long)]
+    pub(crate) no_default_features: bool,
 
     /// Arguments passed to the target binary.
     ///
@@ -111,14 +121,19 @@ impl fmt::Display for Target {
 pub(crate) struct CargoOpts {
     pub(crate) target: Target,
     pub(crate) release: bool,
-    pub(crate) features: Vec<String>,
+    pub(crate) features: CliFeatures,
 }
 
 impl AppConfig {
-    pub(crate) fn to_cargo_opts(&self) -> CargoOpts {
+    pub(crate) fn to_cargo_opts(&self) -> Result<CargoOpts> {
         let target = self.get_target();
-        let features = self.split_features();
-        CargoOpts { target, release: self.release, features }
+        let features = self.features.clone().map(|s| vec![s]).unwrap_or_default();
+        let features = CliFeatures::from_command_line(
+            &features,
+            self.all_features,
+            !self.no_default_features,
+        )?;
+        Ok(CargoOpts { target, release: self.release, features })
     }
 
     fn get_target(&self) -> Target {
@@ -131,16 +146,6 @@ impl AppConfig {
         } else {
             Target::Main
         }
-    }
-
-    fn split_features(&self) -> Vec<String> {
-        self.features
-            .as_ref()
-            .iter()
-            .flat_map(|s| {
-                s.split(|s| s == ' ' || s == ',').filter(|s| !s.is_empty()).map(String::from)
-            })
-            .collect()
     }
 }
 
@@ -207,7 +212,15 @@ mod tests {
         assert_eq!(opts.template_name, Some("time".into()));
         assert_eq!(opts.example, Some("hello".to_string()));
         assert_eq!(opts.features, Some("svg im".to_string()));
-        assert_eq!(opts.to_cargo_opts().features, vec!["svg", "im"]);
+        let features: Vec<_> = opts
+            .to_cargo_opts()
+            .unwrap()
+            .features
+            .features
+            .iter()
+            .map(|feat| feat.to_string())
+            .collect();
+        assert_eq!(features, vec!["im", "svg"]);
     }
 
     #[test]
