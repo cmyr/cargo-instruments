@@ -175,12 +175,6 @@ $ cargo instruments -t alloc
 $ cargo instruments -t Allocations --example my_example --time-limit 10000 --open
 ```
 
-```sh
-# omitting to provide a template will display an interactive menu
-# to choose which template to use for profiling
-$ cargo instruments
-```
-
 ## Resources
 
 [Instruments Help][instruments]
