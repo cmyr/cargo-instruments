@@ -13,7 +13,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-cargo = "0.55"
+cargo = "0.57"
 chrono = "0.4.6"
 structopt = { version = "^0.3", default-features = false }
 semver = "1.0"
