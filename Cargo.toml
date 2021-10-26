@@ -1,6 +1,6 @@
 [package]
 name = "cargo-instruments"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Colin Rofls <colin@cmyr.net>"]
 license = "MIT"
 description = "Profile binary targets on macOS using Xcode Instruments."
