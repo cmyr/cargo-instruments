@@ -51,6 +51,18 @@ Command Line Tools installed; then install with
 $ cargo install cargo-instruments
 ```
 
+#### Building from Source on nix
+
+If you're using [nix](https://nixos.org/guides/install-nix.html), this command should provide all dependencies and build `cargo-instruments` from source:
+
+```sh
+$ nix-shell --command 'cargo install cargo-instruments' --pure -p \
+	darwin.apple_sdk.frameworks.SystemConfiguration \
+	darwin.apple_sdk.frameworks.CoreServices \
+	rustc cargo sccache libgit2 pkg-config libiconv \
+	llvmPackages_13.libclang
+```
+
 ## Usage
 
 ### Basic
