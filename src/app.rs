@@ -68,7 +68,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     {
         let trace_shortpath = trace_filepath
             .strip_prefix(workspace.root().as_os_str())
-            .unwrap_or_else(|_| trace_filepath.as_path())
+            .unwrap_or(trace_filepath.as_path())
             .to_string_lossy();
         workspace.config().shell().status("Trace file", trace_shortpath)?;
     }
