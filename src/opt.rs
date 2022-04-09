@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use cargo::core::resolver::CliFeatures;
+use cargo::ops::Packages;
 use std::fmt;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -36,6 +37,12 @@ pub(crate) struct AppConfig {
         required_unless = "list-templates"
     )]
     pub(crate) template_name: Option<String>,
+
+    /// Specify package for example/bin/bench
+    ///
+    /// For package that has only one bin, it's the same as `--bin PACKAGE_NAME`
+    #[structopt(short = "p", long, value_name = "NAME")]
+    package: Option<String>,
 
     /// Example binary to run
     #[structopt(long, group = "target", value_name = "NAME")]
@@ -106,6 +113,42 @@ pub(crate) enum Target {
     Bench(String),
 }
 
+/// Represents the target of package for example, bin or bench
+#[derive(Debug, PartialEq)]
+pub(crate) enum Package {
+    Default,
+    Package(String),
+}
+
+impl From<Package> for Packages {
+    fn from(p: Package) -> Self {
+        match p {
+            Package::Default => Packages::Default,
+            Package::Package(s) => Packages::Packages(vec![s]),
+        }
+    }
+}
+
+impl Clone for Package {
+    fn clone(&self) -> Self {
+        match self {
+            Package::Default => Package::Default,
+            Package::Package(s) => Package::Package(s.clone()),
+        }
+    }
+}
+
+impl fmt::Display for Package {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Package::Default => {
+                write!(f, "Default: search all packages for example/bin/bench")
+            }
+            Package::Package(s) => write!(f, "{}", s),
+        }
+    }
+}
+
 impl fmt::Display for Target {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -119,6 +162,7 @@ impl fmt::Display for Target {
 
 /// Cargo-specific options
 pub(crate) struct CargoOpts {
+    pub(crate) package: Package,
     pub(crate) target: Target,
     pub(crate) release: bool,
     pub(crate) features: CliFeatures,
@@ -126,6 +170,7 @@ pub(crate) struct CargoOpts {
 
 impl AppConfig {
     pub(crate) fn to_cargo_opts(&self) -> Result<CargoOpts> {
+        let package = self.get_package();
         let target = self.get_target();
         let features = self.features.clone().map(|s| vec![s]).unwrap_or_default();
         let features = CliFeatures::from_command_line(
@@ -133,9 +178,18 @@ impl AppConfig {
             self.all_features,
             !self.no_default_features,
         )?;
-        Ok(CargoOpts { target, release: self.release, features })
+        Ok(CargoOpts { package, target, release: self.release, features })
     }
 
+    fn get_package(&self) -> Package {
+        if let Some(ref package) = self.package {
+            Package::Package(package.clone())
+        } else {
+            Package::Default
+        }
+    }
+
+    // valid target: --example,  --bin, --bench
     fn get_target(&self) -> Target {
         if let Some(ref example) = self.example {
             Target::Example(example.clone())
@@ -160,6 +214,31 @@ mod tests {
         assert!(opts.bin.is_none());
         assert!(!opts.release);
         assert!(opts.trace_filepath.is_none());
+        assert!(opts.package.is_none());
+    }
+
+    #[test]
+    fn package_is_given() {
+        let opts =
+            AppConfig::from_iter(&["instruments", "--package", "foo", "--template", "alloc"]);
+        assert!(opts.example.is_none());
+        assert!(opts.bin.is_none());
+        assert!(opts.bench.is_none());
+        assert_eq!(opts.package.unwrap().as_str(), "foo");
+
+        let opts = AppConfig::from_iter(&[
+            "instruments",
+            "--package",
+            "foo",
+            "--template",
+            "alloc",
+            "--bin",
+            "bin_arg",
+        ]);
+        assert!(opts.example.is_none());
+        assert!(opts.bench.is_none());
+        assert_eq!(opts.bin.unwrap().as_str(), "bin_arg");
+        assert_eq!(opts.package.unwrap().as_str(), "foo");
     }
 
     #[test]

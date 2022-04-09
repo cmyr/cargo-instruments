@@ -128,8 +128,6 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
     use cargo::core::shell::Verbosity;
     workspace.config().shell().set_verbosity(Verbosity::Normal);
 
-    validate_target(&cargo_options.target, workspace)?;
-
     let compile_options = make_compile_opts(cargo_options, workspace.config())?;
     let result = cargo::ops::compile(workspace, &compile_options)?;
 
@@ -155,28 +153,6 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
     }
 }
 
-/// Validate that the target can be built.
-///
-/// This searches the workspace for the provided target, returning an Error if
-/// it can't be found.
-fn validate_target(target: &Target, workspace: &Workspace) -> Result<()> {
-    let package = workspace.current()?;
-    let mut targets = package.targets().iter();
-
-    let has_target = match target {
-        Target::Main => targets.any(|t| t.is_bin()),
-        Target::Bin(name) => targets.any(|t| t.is_bin() && t.name() == name),
-        Target::Example(name) => targets.any(|t| t.is_example() && t.name() == name),
-        Target::Bench(name) => targets.any(|t| t.is_bench() && t.name() == name),
-    };
-
-    if !has_target {
-        return Err(anyhow!("missing target {}", target));
-    }
-
-    Ok(())
-}
-
 /// Generate `CompileOptions` for Cargo.
 ///
 /// This additionally filters options based on user args, so that Cargo
@@ -190,6 +166,7 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
 
     compile_options.build_config.requested_profile = InternedString::new(profile);
     compile_options.cli_features = cargo_options.features.clone();
+    compile_options.spec = cargo_options.package.clone().into();
 
     if cargo_options.target != Target::Main {
         let (bins, examples, benches) = match &cargo_options.target {
