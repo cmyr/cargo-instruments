@@ -14,7 +14,7 @@ files that can be viewed in the Instruments app.
 ### Xcode Instruments
 
 This crate only works on macOS because it uses [Instruments] for profiling
-and creating the trace file.  The benefit is that Instruments provides great
+and creating the trace file. The benefit is that Instruments provides great
 templates and UI to explore the Profiling Trace.
 
 To install Xcode Instruments, simply install the Command Line Tools:
@@ -87,6 +87,19 @@ _Open the trace file in Instruments.app_ (or pass `--open` to open automatically
 $ open target/instruments/mybin_Allocations_2021-05-09T12:34:56.trace
 ```
 
+If there are mutliple packages, you can specify the package to profile with
+the `--package` flag.
+
+For example, you use Cargo's workspace to manage multiple packages. To profile
+the bin `bar` of the package `foo`:
+
+```sh
+$ cargo instruments --package foo --template alloc --bin bar
+```
+
+In most of time, the package only has one binary which makes `--package` behaves the
+same as `--bin`.
+
 ### Profiling application in release mode
 
 When profiling the application in release mode the compiler doesn't provide
@@ -124,6 +137,7 @@ As usual, thanks to Clap, running `cargo instruments -h` prints the compact help
             --bin <NAME>                   Binary to run
             --example <NAME>               Example binary to run
             --features <CARGO-FEATURES>    Features to pass to cargo
+            --package <NAME>               Specify package for example/bin/bench
         -t, --template <TEMPLATE>          Specify the instruments template to run
             --time-limit <MILLIS>          Limit recording time to the specified value (in milliseconds)
         -o, --output <PATH>                Output .trace file to the given path
@@ -162,7 +176,6 @@ Typically, the built-in templates are
     System Trace        (sys)
     Time Profiler       (time)
     Zombies
-
 
 ### Examples
 
