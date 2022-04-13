@@ -97,7 +97,7 @@ the bin `bar` of the package `foo`:
 $ cargo instruments --package foo --template alloc --bin bar
 ```
 
-In most of time, the package only has one binary which makes `--package` behaves the
+In many cases, a package only has one binary. In this case `--package` behaves the
 same as `--bin`.
 
 ### Profiling application in release mode
