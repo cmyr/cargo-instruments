@@ -113,7 +113,7 @@ pub(crate) enum Target {
     Bench(String),
 }
 
-/// Represents the target of package for example, bin or bench
+/// The package in which to look for the specified target (example/bin/bench)
 #[derive(Debug, PartialEq)]
 pub(crate) enum Package {
     Default,
