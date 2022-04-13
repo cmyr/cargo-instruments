@@ -114,7 +114,7 @@ pub(crate) enum Target {
 }
 
 /// The package in which to look for the specified target (example/bin/bench)
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Package {
     Default,
     Package(String),
@@ -125,15 +125,6 @@ impl From<Package> for Packages {
         match p {
             Package::Default => Packages::Default,
             Package::Package(s) => Packages::Packages(vec![s]),
-        }
-    }
-}
-
-impl Clone for Package {
-    fn clone(&self) -> Self {
-        match self {
-            Package::Default => Package::Default,
-            Package::Package(s) => Package::Package(s.clone()),
         }
     }
 }
