@@ -137,7 +137,7 @@ As usual, thanks to Clap, running `cargo instruments -h` prints the compact help
             --bin <NAME>                   Binary to run
             --example <NAME>               Example binary to run
             --features <CARGO-FEATURES>    Features to pass to cargo
-            --package <NAME>               Specify package for example/bin/bench
+            --package <NAME>               Specify package to search for target (in a cargo workspace)
         -t, --template <TEMPLATE>          Specify the instruments template to run
             --time-limit <MILLIS>          Limit recording time to the specified value (in milliseconds)
         -o, --output <PATH>                Output .trace file to the given path
