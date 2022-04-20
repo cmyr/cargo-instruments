@@ -57,8 +57,12 @@ pub(crate) struct AppConfig {
     bench: Option<String>,
 
     /// Pass --release to cargo
-    #[structopt(long)]
+    #[structopt(long, conflicts_with = "profile")]
     release: bool,
+
+    /// Pass --profile NAME to cargo
+    #[structopt(long, value_name = "NAME")]
+    profile: Option<String>,
 
     /// Output .trace file to the given path
     ///
@@ -155,7 +159,7 @@ impl fmt::Display for Target {
 pub(crate) struct CargoOpts {
     pub(crate) package: Package,
     pub(crate) target: Target,
-    pub(crate) release: bool,
+    pub(crate) profile: String,
     pub(crate) features: CliFeatures,
 }
 
@@ -169,7 +173,11 @@ impl AppConfig {
             self.all_features,
             !self.no_default_features,
         )?;
-        Ok(CargoOpts { package, target, release: self.release, features })
+        let profile = self
+            .profile
+            .clone()
+            .unwrap_or_else(|| (if self.release { "release" } else { "dev" }).to_owned());
+        Ok(CargoOpts { package, target, profile, features })
     }
 
     fn get_package(&self) -> Package {

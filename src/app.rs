@@ -162,7 +162,7 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
     use cargo::ops::CompileFilter;
 
     let mut compile_options = CompileOptions::new(cfg, CompileMode::Build)?;
-    let profile = if cargo_options.release { "release" } else { "dev" };
+    let profile = &cargo_options.profile;
 
     compile_options.build_config.requested_profile = InternedString::new(profile);
     compile_options.cli_features = cargo_options.features.clone();
