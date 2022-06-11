@@ -119,33 +119,39 @@ debug = true
 
 As usual, thanks to Clap, running `cargo instruments -h` prints the compact help.
 
-    cargo-instruments 0.4.0
-    Profile a binary with Xcode Instruments.
+```
+cargo-instruments 0.4.5
+Profile a binary with Xcode Instruments.
 
-    By default, cargo-instruments will build your main binary.
+By default, cargo-instruments will build your main binary.
 
-    USAGE:
-        cargo instruments [FLAGS] [OPTIONS] [ARGS]...
+USAGE:
+    cargo instruments [FLAGS] [OPTIONS] --template <TEMPLATE> [ARGS]...
 
-    FLAGS:
-        -h, --help              Prints help information
-        -l, --list-templates    List available templates
-            --open              Open the generated .trace file after profiling
-            --release           Pass --release to cargo
-        -V, --version           Prints version information
+FLAGS:
+    -h, --help                   Prints help information
+    -l, --list-templates         List available templates
+        --no-open                Do not open the generated trace file in Instruments.app
+        --release                Pass --release to cargo
+    -V, --version                Prints version information
+        --all-features           Activate all features for the selected target
+        --no-default-features    Do not activate the default features for the selected target
 
-    OPTIONS:
-            --bench <NAME>                 Benchmark target to run
-            --bin <NAME>                   Binary to run
-            --example <NAME>               Example binary to run
-            --features <CARGO-FEATURES>    Features to pass to cargo
-            --package <NAME>               Specify package to search for target (in a cargo workspace)
-        -t, --template <TEMPLATE>          Specify the instruments template to run
-            --time-limit <MILLIS>          Limit recording time to the specified value (in milliseconds)
-        -o, --output <PATH>                Output .trace file to the given path
+OPTIONS:
+        --bench <NAME>                 Benchmark target to run
+        --bin <NAME>                   Binary to run
+        --example <NAME>               Example binary to run
+        --features <CARGO-FEATURES>    Features to pass to cargo
+    -t, --template <TEMPLATE>          Specify the instruments template to run
+        --time-limit <MILLIS>          Limit recording time to the specified value (in milliseconds)
+    -o, --output <PATH>                Output .trace file to the given path
 
-    ARGS:
-        <ARGS>...    Arguments passed to the target binary
+ARGS:
+    <ARGS>...    Arguments passed to the target binary
+
+EXAMPLE:
+    cargo instruments -t time    Profile main binary with the (recommended) Time Profiler
+```
 
 And `cargo instruments --help` provides more detail.
 
