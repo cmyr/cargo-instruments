@@ -81,10 +81,12 @@ _Generate a new trace file_ (by default saved in `target/instruments`)
 $ cargo instruments -t Allocations
 ```
 
-_Open the trace file in Instruments.app_ (or pass `--open` to open automatically)
+_Open the trace file in Instruments.app manually_
+
+By default the trace file will immediatly be opened with `Instruments.app`. If you do not want this behavior use the `--no-open` flag.
 
 ```sh
-$ open target/instruments/mybin_Allocations_2021-05-09T12:34:56.trace
+$ open target/instruments/mybin_Allocations_2021-05-09T12_34_56.trace
 ```
 
 If there are mutliple packages, you can specify the package to profile with
