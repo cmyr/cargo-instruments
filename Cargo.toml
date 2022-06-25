@@ -11,6 +11,9 @@ keywords = ["profiling", "xcode", "cargo-subcommand", "trace", "macos"]
 readme = "README.md"
 edition = "2021"
 
+[features]
+vendored-openssl = ["cargo/vendored-openssl"]
+
 [dependencies]
 anyhow = "1.0"
 cargo = "0.63"
