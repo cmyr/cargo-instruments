@@ -87,6 +87,8 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
 /// for more information.
 #[cfg(target_arch = "aarch64")]
 fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
+    use std::fmt::Write;
+
     static ENTITLEMENTS_FILENAME: &str = "entitlements.plist";
     static ENTITLEMENTS_PLIST_DATA: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -114,7 +116,7 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
             if !msg.is_empty() {
                 msg.push('\n');
             }
-            msg.push_str(&format!("stderr: \"{}\"", String::from_utf8_lossy(&output.stderr)));
+            write!(&mut msg, "stderr: \"{}\"", String::from_utf8_lossy(&output.stderr))?;
         }
 
         workspace.config().shell().status_with_color("Code signing failed", msg, Color::Red)?;

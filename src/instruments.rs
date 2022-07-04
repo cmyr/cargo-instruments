@@ -1,5 +1,6 @@
 //! interfacing with the `instruments` command line tool
 
+use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -331,18 +332,14 @@ pub fn render_template_catalog(catalog: &TemplateCatalog) -> String {
         .unwrap();
 
     // column headers
-    output.push_str(&format!("\n{:width$}abbrev", "built-in", width = max_width + 2));
-    output.push_str(&format!("\n{:-<width$}", "", width = max_width + 8));
+    write!(&mut output, "\n{:width$}abbrev", "built-in", width = max_width + 2).unwrap();
+    write!(&mut output, "\n{:-<width$}", "", width = max_width + 8).unwrap();
 
     for name in &catalog.standard_templates {
         output.push('\n');
         if let Some(abbrv) = abbrev_name(name.trim_matches('"')) {
-            output.push_str(&format!(
-                "{:width$}({abbrev})",
-                name,
-                width = max_width + 2,
-                abbrev = abbrv
-            ));
+            write!(&mut output, "{:width$}({abbrev})", name, width = max_width + 2, abbrev = abbrv)
+                .unwrap();
         } else {
             output.push_str(name);
         }
@@ -351,8 +348,8 @@ pub fn render_template_catalog(catalog: &TemplateCatalog) -> String {
     output.push('\n');
 
     // column headers
-    output.push_str(&format!("\n{:width$}", "custom", width = max_width + 2));
-    output.push_str(&format!("\n{:-<width$}", "", width = max_width + 8));
+    write!(&mut output, "\n{:width$}", "custom", width = max_width + 2).unwrap();
+    write!(&mut output, "\n{:-<width$}", "", width = max_width + 8).unwrap();
 
     for name in &catalog.custom_templates {
         output.push('\n');
