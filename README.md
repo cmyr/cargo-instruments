@@ -45,10 +45,18 @@ Alternatively, you can install from source.
 ### Building from Source
 
 First, ensure that you are running macOS, with Cargo, Xcode, and the Xcode
-Command Line Tools installed; then install with
+Command Line Tools installed.
+
+If OpenSSL is installed (e.g., via `brew`), then install with
 
 ```sh
 $ cargo install cargo-instruments
+```
+
+If OpenSSL is not installed or if `cargo install` fails with an error message starting with "Could not find directory of OpenSSL installation, and this `-sys` crate cannot proceed without this knowledge," then install with
+
+```sh
+$ cargo install --features vendored-openssl cargo-instruments
 ```
 
 #### Building from Source on nix
@@ -60,7 +68,7 @@ $ nix-shell --command 'cargo install cargo-instruments' --pure -p \
 	darwin.apple_sdk.frameworks.SystemConfiguration \
 	darwin.apple_sdk.frameworks.CoreServices \
 	rustc cargo sccache libgit2 pkg-config libiconv \
-	llvmPackages_13.libclang
+	llvmPackages_13.libclang openssl
 ```
 
 ## Usage
