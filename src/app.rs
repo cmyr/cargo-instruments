@@ -28,7 +28,10 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
 
     // 3. Build the specified target
     let cargo_config = Config::default()?;
-    let manifest_path = important_paths::find_root_manifest_for_wd(cargo_config.cwd())?;
+    let manifest_path = app_config
+        .manifest_path
+        .clone()
+        .map_or_else(|| important_paths::find_root_manifest_for_wd(cargo_config.cwd()), Ok)?;
     let workspace = Workspace::new(&manifest_path, &cargo_config)?;
 
     // 3.1: warn if --open passed. We do this here so we have access to cargo's
