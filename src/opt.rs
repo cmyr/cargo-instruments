@@ -92,6 +92,10 @@ pub(crate) struct AppConfig {
     #[structopt(long, value_name = "CARGO-FEATURES")]
     pub(crate) features: Option<String>,
 
+    /// Path to Cargo.toml
+    #[structopt(long, value_name = "PATH")]
+    pub(crate) manifest_path: Option<PathBuf>,
+
     /// Activate all features for the selected target.
     #[structopt(long, display_order = 1001)]
     pub(crate) all_features: bool,
