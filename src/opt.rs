@@ -218,6 +218,7 @@ mod tests {
         assert!(!opts.release);
         assert!(opts.trace_filepath.is_none());
         assert!(opts.package.is_none());
+        assert!(opts.manifest_path.is_none());
     }
 
     #[test]
@@ -321,5 +322,21 @@ mod tests {
         assert_eq!(opts.template_name, Some("alloc".into()));
         assert_eq!(opts.time_limit, Some(808));
         assert_eq!(opts.target_args, vec!["hi", "-h", "--bin"]);
+    }
+
+    #[test]
+    fn manifest_path() {
+        let opts = AppConfig::from_iter(&[
+            "instruments",
+            "--manifest-path",
+            "/path/to/Cargo.toml",
+            "--template",
+            "alloc",
+        ]);
+        assert!(opts.example.is_none());
+        assert!(opts.bin.is_none());
+        assert!(opts.bench.is_none());
+        assert!(opts.package.is_none());
+        assert_eq!(opts.manifest_path.unwrap(), PathBuf::from("/path/to/Cargo.toml"));
     }
 }

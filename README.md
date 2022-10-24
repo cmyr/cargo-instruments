@@ -128,7 +128,7 @@ debug = true
 As usual, thanks to Clap, running `cargo instruments -h` prints the compact help.
 
 ```
-cargo-instruments 0.4.5
+cargo-instruments 0.4.7
 Profile a binary with Xcode Instruments.
 
 By default, cargo-instruments will build your main binary.
@@ -150,6 +150,9 @@ OPTIONS:
         --bin <NAME>                   Binary to run
         --example <NAME>               Example binary to run
         --features <CARGO-FEATURES>    Features to pass to cargo
+        --manifest-path <PATH>         Path to Cargo.toml
+    -p, --package <NAME>               Specify package for example/bin/bench
+        --profile <NAME>               Pass --profile NAME to cargo
     -t, --template <TEMPLATE>          Specify the instruments template to run
         --time-limit <MILLIS>          Limit recording time to the specified value (in milliseconds)
     -o, --output <PATH>                Output .trace file to the given path
@@ -158,7 +161,7 @@ ARGS:
     <ARGS>...    Arguments passed to the target binary
 
 EXAMPLE:
-    cargo instruments -t time    Profile main binary with the (recommended) Time Profiler
+    cargo instruments -t time    Profile main binary with the (recommended) Time Profiler.
 ```
 
 And `cargo instruments --help` provides more detail.
