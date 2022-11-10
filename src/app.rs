@@ -104,7 +104,7 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
     std::fs::write(&entitlement_path, ENTITLEMENTS_PLIST_DATA.as_bytes())?;
 
     let output = Command::new("codesign")
-        .args(&["-s", "-", "-f", "--entitlements"])
+        .args(["-s", "-", "-f", "--entitlements"])
         .args([&entitlement_path, path])
         .output()?;
     if !output.status.success() {
