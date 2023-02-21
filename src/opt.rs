@@ -3,6 +3,7 @@
 use anyhow::Result;
 use cargo::core::resolver::CliFeatures;
 use cargo::ops::Packages;
+use cargo::util::command_prelude::CompileMode;
 use std::fmt;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -53,6 +54,8 @@ pub(crate) struct AppConfig {
     bin: Option<String>,
 
     /// Benchmark target to run
+    ///
+    /// Use --benchmarks to execute benchmarks in non-bench targets.
     #[structopt(long, group = "target", value_name = "NAME")]
     bench: Option<String>,
 
@@ -63,6 +66,10 @@ pub(crate) struct AppConfig {
     /// Pass --profile NAME to cargo
     #[structopt(long, value_name = "NAME")]
     profile: Option<String>,
+
+    /// Execute benchmarks like `cargo bench`.
+    #[structopt(long)]
+    pub(crate) benchmarks: bool,
 
     /// Output .trace file to the given path
     ///
@@ -161,6 +168,7 @@ impl fmt::Display for Target {
 
 /// Cargo-specific options
 pub(crate) struct CargoOpts {
+    pub(crate) mode: CompileMode,
     pub(crate) package: Package,
     pub(crate) target: Target,
     pub(crate) profile: String,
@@ -169,6 +177,7 @@ pub(crate) struct CargoOpts {
 
 impl AppConfig {
     pub(crate) fn to_cargo_opts(&self) -> Result<CargoOpts> {
+        let mode = if self.benchmarks { CompileMode::Bench } else { CompileMode::Build };
         let package = self.get_package();
         let target = self.get_target();
         let features = self.features.clone().map(|s| vec![s]).unwrap_or_default();
@@ -177,11 +186,17 @@ impl AppConfig {
             self.all_features,
             !self.no_default_features,
         )?;
-        let profile = self
-            .profile
-            .clone()
-            .unwrap_or_else(|| (if self.release { "release" } else { "dev" }).to_owned());
-        Ok(CargoOpts { package, target, profile, features })
+        let profile = self.profile.clone().unwrap_or_else(|| {
+            (if self.release {
+                "release"
+            } else if self.benchmarks {
+                "bench"
+            } else {
+                "dev"
+            })
+            .to_owned()
+        });
+        Ok(CargoOpts { mode, package, target, profile, features })
     }
 
     fn get_package(&self) -> Package {

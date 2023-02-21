@@ -456,8 +456,10 @@ pub(crate) fn profile_target(
 
     command.arg(target_filepath);
 
-    if !app_config.target_args.is_empty() {
-        command.args(app_config.target_args.as_slice());
+    let bench_args = app_config.benchmarks.then_some("--bench".to_string());
+    let target_args = bench_args.iter().chain(&app_config.target_args).collect::<Vec<_>>();
+    if !target_args.is_empty() {
+        command.args(target_args.as_slice());
     }
 
     let output = command.output()?;
