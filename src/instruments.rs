@@ -33,7 +33,9 @@ impl XcodeInstruments {
             // This is the check used by Homebrew,see
             // https://github.com/Homebrew/install/blob/a1d820fc8950312c35073700d0ea88a531bc5950/install.sh#L216
             let clt_git_filepath = Path::new("/Library/Developer/CommandLineTools/usr/bin/git");
-            if clt_git_filepath.exists() {
+            let xcode_git_filepath =
+                Path::new("/Applications/Xcode.app/Contents/Developer/usr/bin/git");
+            if clt_git_filepath.exists() || xcode_git_filepath.exists() {
                 return Ok(XcodeInstruments::XcTrace);
             }
         } else {
@@ -43,7 +45,7 @@ impl XcodeInstruments {
             }
         }
         Err(anyhow!(
-            "Xcode Instruments is not installed. Please install the Xcode Command Line Tools."
+            "Xcode Instruments is not installed. Please install the Xcode.app or Xcode Command Line Tools."
         ))
     }
 
