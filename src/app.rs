@@ -59,10 +59,9 @@ pub(crate) fn run(mut app_config: AppConfig) -> Result<()> {
     #[cfg(target_arch = "aarch64")]
     codesign(&target_filepath, &workspace)?;
 
-
     if let Target::Test(_, ref tests) = cargo_options.target {
         app_config.target_args.insert(0, tests.clone());
-    } 
+    }
 
     // 4. Profile the built target, will display menu if no template was selected
     let trace_filepath =
@@ -139,7 +138,7 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
 /// the path to the built executable.
 fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<PathBuf> {
     use cargo::core::shell::Verbosity;
-    workspace.config().shell().set_verbosity(Verbosity::Verbose);
+    workspace.config().shell().set_verbosity(Verbosity::Normal);
 
     let compile_options = make_compile_opts(cargo_options, workspace.config())?;
     let result = cargo::ops::compile(workspace, &compile_options)?;
@@ -155,9 +154,7 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
         result
             .tests
             .iter()
-            .find(|unit_output| {
-                unit_output.unit.target.name() == harness
-            })
+            .find(|unit_output| unit_output.unit.target.name() == harness)
             .map(|unit_output| unit_output.path.clone())
             .ok_or_else(|| anyhow!("no test '{}'", harness))
     } else {

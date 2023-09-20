@@ -213,7 +213,6 @@ impl AppConfig {
         } else if let Some(ref harness) = self.harness {
             let test = self.test.clone().unwrap_or_default();
             Target::Test(harness.clone(), test)
-
         } else {
             Target::Main
         }
