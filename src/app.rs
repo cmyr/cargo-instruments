@@ -15,7 +15,7 @@ use crate::instruments;
 use crate::opt::{AppConfig, CargoOpts, Target};
 
 /// Main entrance point, after args have been parsed.
-pub(crate) fn run(app_config: AppConfig) -> Result<()> {
+pub(crate) fn run(mut app_config: AppConfig) -> Result<()> {
     // 1. Detect the type of Xcode Instruments installation
     let xctrace_tool = instruments::XcodeInstruments::detect()?;
 
@@ -58,6 +58,11 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
 
     #[cfg(target_arch = "aarch64")]
     codesign(&target_filepath, &workspace)?;
+
+
+    if let Target::Test(_, ref tests) = cargo_options.target {
+        app_config.target_args.insert(0, tests.clone());
+    } 
 
     // 4. Profile the built target, will display menu if no template was selected
     let trace_filepath =
@@ -134,7 +139,7 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
 /// the path to the built executable.
 fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<PathBuf> {
     use cargo::core::shell::Verbosity;
-    workspace.config().shell().set_verbosity(Verbosity::Normal);
+    workspace.config().shell().set_verbosity(Verbosity::Verbose);
 
     let compile_options = make_compile_opts(cargo_options, workspace.config())?;
     let result = cargo::ops::compile(workspace, &compile_options)?;
@@ -146,6 +151,15 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
             .find(|unit_output| unit_output.unit.target.name() == bench)
             .map(|unit_output| unit_output.path.clone())
             .ok_or_else(|| anyhow!("no benchmark '{}'", bench))
+    } else if let Target::Test(ref harness, _) = cargo_options.target {
+        result
+            .tests
+            .iter()
+            .find(|unit_output| {
+                unit_output.unit.target.name() == harness
+            })
+            .map(|unit_output| unit_output.path.clone())
+            .ok_or_else(|| anyhow!("no test '{}'", harness))
     } else {
         match result.binaries.as_slice() {
             [unit_output] => Ok(unit_output.path.clone()),
@@ -177,10 +191,11 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
     compile_options.spec = cargo_options.package.clone().into();
 
     if cargo_options.target != Target::Main {
-        let (bins, examples, benches) = match &cargo_options.target {
-            Target::Bin(bin) => (vec![bin.clone()], vec![], vec![]),
-            Target::Example(bin) => (vec![], vec![bin.clone()], vec![]),
-            Target::Bench(bin) => (vec![], vec![], vec![bin.clone()]),
+        let (bins, examples, benches, _tests) = match &cargo_options.target {
+            Target::Bin(bin) => (vec![bin.clone()], vec![], vec![], vec![]),
+            Target::Example(bin) => (vec![], vec![bin.clone()], vec![], vec![]),
+            Target::Bench(bin) => (vec![], vec![], vec![bin.clone()], vec![]),
+            Target::Test(bin, _test) => (vec![], vec![], vec![], vec![bin.clone()]),
             _ => unreachable!(),
         };
 
@@ -188,8 +203,8 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
             false,
             bins,
             false,
-            Vec::new(),
-            false,
+            vec![],
+            true,
             examples,
             false,
             benches,
