@@ -150,10 +150,7 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
         result
             .tests
             .iter()
-            .find(|unit_output| {
-                println!("testing output {}", unit_output.unit.target.name());
-                unit_output.unit.target.name() == test
-            })
+            .find(|unit_output| { unit_output.unit.target.name() == test })
             .map(|unit_output| unit_output.path.clone())
             .ok_or_else(|| anyhow!("no test '{}'", test))
     } else {
