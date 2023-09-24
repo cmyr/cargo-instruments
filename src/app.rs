@@ -15,7 +15,7 @@ use crate::instruments;
 use crate::opt::{AppConfig, CargoOpts, Target};
 
 /// Main entrance point, after args have been parsed.
-pub(crate) fn run(mut app_config: AppConfig) -> Result<()> {
+pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     // 1. Detect the type of Xcode Instruments installation
     let xctrace_tool = instruments::XcodeInstruments::detect()?;
 
@@ -58,10 +58,6 @@ pub(crate) fn run(mut app_config: AppConfig) -> Result<()> {
 
     #[cfg(target_arch = "aarch64")]
     codesign(&target_filepath, &workspace)?;
-
-    if let Target::Test(_, ref tests) = cargo_options.target {
-        app_config.target_args.insert(0, tests.clone());
-    }
 
     // 4. Profile the built target, will display menu if no template was selected
     let trace_filepath =
@@ -150,13 +146,16 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
             .find(|unit_output| unit_output.unit.target.name() == bench)
             .map(|unit_output| unit_output.path.clone())
             .ok_or_else(|| anyhow!("no benchmark '{}'", bench))
-    } else if let Target::Test(ref harness, _) = cargo_options.target {
+    } else if let Target::Test(ref test) = cargo_options.target {
         result
             .tests
             .iter()
-            .find(|unit_output| unit_output.unit.target.name() == harness)
+            .find(|unit_output| {
+                println!("testing output {}", unit_output.unit.target.name());
+                unit_output.unit.target.name() == test
+            })
             .map(|unit_output| unit_output.path.clone())
-            .ok_or_else(|| anyhow!("no test '{}'", harness))
+            .ok_or_else(|| anyhow!("no test '{}'", test))
     } else {
         match result.binaries.as_slice() {
             [unit_output] => Ok(unit_output.path.clone()),
@@ -188,11 +187,11 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
     compile_options.spec = cargo_options.package.clone().into();
 
     if cargo_options.target != Target::Main {
-        let (bins, examples, benches, _tests) = match &cargo_options.target {
+        let (bins, examples, benches, tests) = match &cargo_options.target {
             Target::Bin(bin) => (vec![bin.clone()], vec![], vec![], vec![]),
             Target::Example(bin) => (vec![], vec![bin.clone()], vec![], vec![]),
             Target::Bench(bin) => (vec![], vec![], vec![bin.clone()], vec![]),
-            Target::Test(bin, _test) => (vec![], vec![], vec![], vec![bin.clone()]),
+            Target::Test(bin) => (vec![], vec![], vec![], vec![bin.clone()]),
             _ => unreachable!(),
         };
 
@@ -201,7 +200,7 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
             bins,
             false,
             vec![],
-            true,
+            !tests.is_empty(),
             examples,
             false,
             benches,
