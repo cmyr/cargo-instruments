@@ -77,8 +77,8 @@ $ nix-shell --command 'cargo install cargo-instruments' --pure -p \
 
 `cargo-instruments` requires a binary target to run. By default, it will try to
 build the current crate's `main.rs`. You can specify an alternative binary by
-using the `--bin` or `--example` flags, or a benchmark target with the `--bench`
-flag.
+using the `--bin` or `--example` flags, a test target with the `--test` flag,
+or a benchmark target with the `--bench` flag.
 
 Assuming your crate has one binary target named `mybin`, and you want to profile
 using the `Allocations` Instruments template:
@@ -154,6 +154,7 @@ OPTIONS:
     -p, --package <NAME>               Specify package for example/bin/bench
         --profile <NAME>               Pass --profile NAME to cargo
     -t, --template <TEMPLATE>          Specify the instruments template to run
+        --test <NAME>                  Test target to run
         --time-limit <MILLIS>          Limit recording time to the specified value (in milliseconds)
     -o, --output <PATH>                Output .trace file to the given path
 
@@ -217,6 +218,15 @@ $ cargo instruments -t alloc
 # profile examples/my_example.rs, with the Allocations template,
 # for 10 seconds, and open the trace when finished
 $ cargo instruments -t Allocations --example my_example --time-limit 10000 --open
+```
+
+```shell
+# Profile a single test scanario with the File Activity template
+#
+# You will find `your_library_name` name by running `cargo test` and checking the 'Running' line.
+# e.g. Running unittests src/main.rs (target/debug/deps/your_library_name-3cabce0a041cfeed)
+# Optionally, you can provide a specific test case after the -- marker
+$ cargo instruments -t io --test your_library_name -- opt::tests::specific_test
 ```
 
 ## Resources
