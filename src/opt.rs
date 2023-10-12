@@ -115,7 +115,7 @@ pub(crate) struct AppConfig {
 /// Represents the kind of target to profile.
 #[derive(Debug, PartialEq)]
 pub(crate) enum Target {
-    Main,
+    Default,
     Example(String),
     Bin(String),
     Bench(String),
@@ -151,10 +151,10 @@ impl fmt::Display for Package {
 impl fmt::Display for Target {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Target::Main => write!(f, "src/main.rs"),
-            Target::Example(bin) => write!(f, "examples/{}.rs", bin),
-            Target::Bin(bin) => write!(f, "bin/{}.rs", bin),
-            Target::Bench(bench) => write!(f, "bench {}", bench),
+            Target::Default => write!(f, "default"),
+            Target::Example(bin) => write!(f, "{bin} (example)",),
+            Target::Bin(bin) => write!(f, "{bin} (bin)"),
+            Target::Bench(bench) => write!(f, "{bench} (bench)"),
         }
     }
 }
@@ -201,7 +201,7 @@ impl AppConfig {
         } else if let Some(ref bench) = self.bench {
             Target::Bench(bench.clone())
         } else {
-            Target::Main
+            Target::Default
         }
     }
 }

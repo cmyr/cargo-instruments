@@ -18,6 +18,7 @@ use crate::opt::{AppConfig, CargoOpts, Target};
 pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     // 1. Detect the type of Xcode Instruments installation
     let xctrace_tool = instruments::XcodeInstruments::detect()?;
+    log::debug!("using {xctrace_tool}");
 
     // 2. Render available templates if the user asked
     if app_config.list_templates {
@@ -35,6 +36,8 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         None => important_paths::find_root_manifest_for_wd(cargo_config.cwd()),
     }?;
 
+    log::debug!("using cargo manifest at {}", manifest_path.display());
+
     let workspace = Workspace::new(&manifest_path, &cargo_config)?;
 
     // 3.1: warn if --open passed. We do this here so we have access to cargo's
@@ -48,6 +51,8 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     }
 
     let cargo_options = app_config.to_cargo_opts()?;
+
+    log::debug!("building profile target {}", cargo_options.target);
     let target_filepath = match build_target(&cargo_options, &workspace) {
         Ok(path) => path,
         Err(e) => {
@@ -55,6 +60,8 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
             return Err(e);
         }
     };
+
+    log::debug!("running against target {}", target_filepath.display());
 
     #[cfg(target_arch = "aarch64")]
     codesign(&target_filepath, &workspace)?;
@@ -176,7 +183,7 @@ fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileO
     compile_options.cli_features = cargo_options.features.clone();
     compile_options.spec = cargo_options.package.clone().into();
 
-    if cargo_options.target != Target::Main {
+    if cargo_options.target != Target::Default {
         let (bins, examples, benches) = match &cargo_options.target {
             Target::Bin(bin) => (vec![bin.clone()], vec![], vec![]),
             Target::Example(bin) => (vec![], vec![bin.clone()], vec![]),
