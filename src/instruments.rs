@@ -1,6 +1,6 @@
 //! interfacing with the `instruments` command line tool
 
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -483,6 +483,15 @@ fn get_tty() -> Result<Option<String>> {
         .split_whitespace()
         .next()
         .map(|tty| format!("/dev/{}", tty)))
+}
+
+impl Display for XcodeInstruments {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            XcodeInstruments::XcTrace => f.write_str("xctrace"),
+            XcodeInstruments::InstrumentsBinary => f.write_str("legacy instruments binary"),
+        }
+    }
 }
 
 #[cfg(test)]
