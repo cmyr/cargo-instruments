@@ -462,17 +462,39 @@ pub(crate) fn profile_target(
         command.args(app_config.target_args.as_slice());
     }
 
-    let output = command.output()?;
+    log_command_string(&command);
 
+    let output = command.output()?;
+    let stdout = if !output.stdout.is_empty() {
+        String::from_utf8_lossy(&output.stdout)
+    } else {
+        "{empty}".into()
+    };
+    let stderr = if !output.stderr.is_empty() {
+        String::from_utf8_lossy(&output.stderr)
+    } else {
+        "{empty}".into()
+    };
+    if output.status.success() {
+        log::debug!("{xctrace_tool} exited successfuly");
+        log::debug!("captured stdout:\n{stdout}");
+        log::debug!("captured stderr:\n{stderr}");
+    }
     if !output.status.success() {
-        let stderr =
-            String::from_utf8(output.stderr).unwrap_or_else(|_| "failed to capture stderr".into());
-        let stdout =
-            String::from_utf8(output.stdout).unwrap_or_else(|_| "failed to capture stdout".into());
-        return Err(anyhow!("instruments errored: {} {}", stderr, stdout));
+        return Err(anyhow!(
+            "{xctrace_tool} exited with error.\nstdout: {}\nstderr: {stderr}",
+            stdout.trim_end(),
+        ));
     }
 
     Ok(trace_filepath)
+}
+
+fn log_command_string(command: &Command) {
+    let mut elements = vec![command.get_program().to_string_lossy()];
+    elements.extend(command.get_args().map(|arg| arg.to_string_lossy()));
+    let as_string = elements.join(" ");
+    log::debug!("executing command {as_string}")
 }
 
 /// get the tty of th current terminal session
