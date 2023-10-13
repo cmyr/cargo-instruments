@@ -56,6 +56,10 @@ pub(crate) struct AppConfig {
     #[structopt(long, group = "target", value_name = "NAME")]
     bench: Option<String>,
 
+    /// Test target to run
+    #[structopt(long, group = "target", value_name = "NAME")]
+    test: Option<String>,
+
     /// Pass --release to cargo
     #[structopt(long, conflicts_with = "profile")]
     release: bool,
@@ -119,6 +123,7 @@ pub(crate) enum Target {
     Example(String),
     Bin(String),
     Bench(String),
+    Test(String),
 }
 
 /// The package in which to look for the specified target (example/bin/bench)
@@ -155,6 +160,7 @@ impl fmt::Display for Target {
             Target::Example(bin) => write!(f, "examples/{}.rs", bin),
             Target::Bin(bin) => write!(f, "bin/{}.rs", bin),
             Target::Bench(bench) => write!(f, "bench {}", bench),
+            Target::Test(test) => write!(f, "test {}", test),
         }
     }
 }
@@ -192,7 +198,7 @@ impl AppConfig {
         }
     }
 
-    // valid target: --example,  --bin, --bench
+    // valid target: --example,  --bin, --bench, --harness
     fn get_target(&self) -> Target {
         if let Some(ref example) = self.example {
             Target::Example(example.clone())
@@ -200,6 +206,8 @@ impl AppConfig {
             Target::Bin(bin.clone())
         } else if let Some(ref bench) = self.bench {
             Target::Bench(bench.clone())
+        } else if let Some(ref test) = self.test {
+            Target::Test(test.clone())
         } else {
             Target::Main
         }
