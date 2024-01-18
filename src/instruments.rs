@@ -476,7 +476,7 @@ pub(crate) fn profile_target(
         "{empty}".into()
     };
     if output.status.success() {
-        log::debug!("{xctrace_tool} exited successfuly");
+        log::debug!("{xctrace_tool} exited successfully");
         log::debug!("captured stdout:\n{stdout}");
         log::debug!("captured stderr:\n{stderr}");
     }
