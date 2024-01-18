@@ -91,13 +91,13 @@ $ cargo instruments -t Allocations
 
 _Open the trace file in Instruments.app manually_
 
-By default the trace file will immediatly be opened with `Instruments.app`. If you do not want this behavior use the `--no-open` flag.
+By default the trace file will immediately be opened with `Instruments.app`. If you do not want this behavior use the `--no-open` flag.
 
 ```sh
 $ open target/instruments/mybin_Allocations_2021-05-09T12_34_56.trace
 ```
 
-If there are mutliple packages, you can specify the package to profile with
+If there are multiple packages, you can specify the package to profile with
 the `--package` flag.
 
 For example, you use Cargo's workspace to manage multiple packages. To profile
