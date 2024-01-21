@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{anyhow, Result};
+use cargo::util::command_prelude::CompileMode;
 use cargo::{
     core::Workspace,
     ops::CompileOptions,
@@ -154,7 +155,9 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
             .map(|unit_output| unit_output.path.clone())
             .ok_or_else(|| anyhow!("no benchmark '{}'", bench))
     } else {
-        match result.binaries.as_slice() {
+        let unit_outputs =
+            if cargo_options.mode == CompileMode::Bench { &result.tests } else { &result.binaries };
+        match unit_outputs.as_slice() {
             [unit_output] => Ok(unit_output.path.clone()),
             [] => Err(anyhow!("no targets found")),
             other => Err(anyhow!(
@@ -173,10 +176,9 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
 /// This additionally filters options based on user args, so that Cargo
 /// builds as little as possible.
 fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileOptions> {
-    use cargo::core::compiler::CompileMode;
     use cargo::ops::CompileFilter;
 
-    let mut compile_options = CompileOptions::new(cfg, CompileMode::Build)?;
+    let mut compile_options = CompileOptions::new(cfg, cargo_options.mode)?;
     let profile = &cargo_options.profile;
 
     compile_options.build_config.requested_profile = InternedString::new(profile);
