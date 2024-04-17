@@ -16,10 +16,9 @@ vendored-openssl = ["cargo/vendored-openssl"]
 
 [dependencies]
 anyhow = "1.0"
-cargo = "0.74"
+cargo = "0.78"
 chrono = "0.4.6"
 structopt = { version = "^0.3", default-features = false }
 semver = "1.0"
-termcolor = "1.0"
 env_logger = "0.10.0"
 log = "0.4.20"

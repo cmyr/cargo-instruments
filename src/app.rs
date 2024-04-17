@@ -4,12 +4,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{anyhow, Result};
+use cargo::util::style;
 use cargo::{
     core::Workspace,
     ops::CompileOptions,
     util::{config::Config, important_paths, interning::InternedString},
 };
-use termcolor::Color;
 
 use crate::instruments;
 use crate::opt::{AppConfig, CargoOpts, Target};
@@ -46,7 +46,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         workspace.config().shell().status_with_color(
             "Warning",
             "--open is now the default behaviour, and will be ignored.",
-            Color::Yellow,
+            &style::WARN,
         )?;
     }
 
@@ -56,7 +56,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     let target_filepath = match build_target(&cargo_options, &workspace) {
         Ok(path) => path,
         Err(e) => {
-            workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
+            workspace.config().shell().status_with_color("Failed", &e, &style::ERROR)?;
             return Err(e);
         }
     };
@@ -72,7 +72,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         {
             Ok(path) => path,
             Err(e) => {
-                workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
+                workspace.config().shell().status_with_color("Failed", &e, &style::ERROR)?;
                 return Ok(());
             }
         };
@@ -132,7 +132,7 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
             write!(&mut msg, "stderr: \"{}\"", String::from_utf8_lossy(&output.stderr))?;
         }
 
-        workspace.config().shell().status_with_color("Code signing failed", msg, Color::Red)?;
+        workspace.config().shell().status_with_color("Code signing failed", msg, &style::ERROR)?;
     }
     Ok(())
 }
