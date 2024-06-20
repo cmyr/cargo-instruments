@@ -450,7 +450,7 @@ pub(crate) fn profile_target(
             .unwrap_or(target_filepath)
             .to_string_lossy();
         let status_detail = format!("{} with template '{}'", target_shortpath, template_name);
-        workspace.config().shell().status("Profiling", status_detail)?;
+        workspace.gctx().shell().status("Profiling", status_detail)?;
     }
 
     let mut command =

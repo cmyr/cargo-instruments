@@ -4,12 +4,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{anyhow, Result};
+use cargo::GlobalContext;
 use cargo::{
     core::Workspace,
     ops::CompileOptions,
-    util::{config::Config, important_paths, interning::InternedString},
+    util::{important_paths, interning::InternedString},
 };
-use termcolor::Color;
 
 use crate::instruments;
 use crate::opt::{AppConfig, CargoOpts, Target};
@@ -28,7 +28,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     }
 
     // 3. Build the specified target
-    let cargo_config = Config::default()?;
+    let cargo_config = GlobalContext::default()?;
 
     let manifest_path = match app_config.manifest_path.as_ref() {
         Some(path) if path.is_absolute() => Ok(path.to_owned()),
@@ -43,11 +43,10 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     // 3.1: warn if --open passed. We do this here so we have access to cargo's
     // pretty-printer
     if app_config.open {
-        workspace.config().shell().status_with_color(
-            "Warning",
-            "--open is now the default behaviour, and will be ignored.",
-            Color::Yellow,
-        )?;
+        workspace
+            .gctx()
+            .shell()
+            .warn("--open is now the default behaviour, and will be ignored.")?;
     }
 
     let cargo_options = app_config.to_cargo_opts()?;
@@ -56,7 +55,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     let target_filepath = match build_target(&cargo_options, &workspace) {
         Ok(path) => path,
         Err(e) => {
-            workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
+            workspace.gctx().shell().error(&e)?;
             return Err(e);
         }
     };
@@ -72,7 +71,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         {
             Ok(path) => path,
             Err(e) => {
-                workspace.config().shell().status_with_color("Failed", &e, Color::Red)?;
+                workspace.gctx().shell().error(&e)?;
                 return Ok(());
             }
         };
@@ -83,7 +82,7 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
             .strip_prefix(workspace.root().as_os_str())
             .unwrap_or(trace_filepath.as_path())
             .to_string_lossy();
-        workspace.config().shell().status("Trace file", trace_shortpath)?;
+        workspace.gctx().shell().status("Trace file", trace_shortpath)?;
     }
 
     // 6. Open Xcode Instruments if asked
@@ -132,7 +131,7 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
             write!(&mut msg, "stderr: \"{}\"", String::from_utf8_lossy(&output.stderr))?;
         }
 
-        workspace.config().shell().status_with_color("Code signing failed", msg, Color::Red)?;
+        workspace.gctx().shell().error("Code signing failed")?;
     }
     Ok(())
 }
@@ -141,9 +140,9 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
 /// the path to the built executable.
 fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<PathBuf> {
     use cargo::core::shell::Verbosity;
-    workspace.config().shell().set_verbosity(Verbosity::Normal);
+    workspace.gctx().shell().set_verbosity(Verbosity::Normal);
 
-    let compile_options = make_compile_opts(cargo_options, workspace.config())?;
+    let compile_options = make_compile_opts(cargo_options, workspace.gctx())?;
     let result = cargo::ops::compile(workspace, &compile_options)?;
 
     if let Target::Bench(ref bench) = cargo_options.target {
@@ -172,7 +171,7 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
 ///
 /// This additionally filters options based on user args, so that Cargo
 /// builds as little as possible.
-fn make_compile_opts(cargo_options: &CargoOpts, cfg: &Config) -> Result<CompileOptions> {
+fn make_compile_opts(cargo_options: &CargoOpts, cfg: &GlobalContext) -> Result<CompileOptions> {
     use cargo::core::compiler::CompileMode;
     use cargo::ops::CompileFilter;
 
