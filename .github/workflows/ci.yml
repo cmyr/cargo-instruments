@@ -9,7 +9,7 @@ jobs:
     runs-on: macOS-latest
     name: rustfmt
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -32,7 +32,7 @@ jobs:
     runs-on: macOS-latest
     name: cargo test stable
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: install cairo
         run: brew install cairo
