@@ -228,10 +228,10 @@ $ cargo instruments -t Allocations --example my_example --time-limit 10000 --ope
 The best source of information about Instruments is likely the various WWDC
 sessions over the years:
 
-- [Profiling in Depth](https://developer.apple.com/videos/play/wwdc2015/412/)
-- [Using Time Profiler in Instruments](https://developer.apple.com/videos/play/wwdc2016/418/)
-- [System Trace in Depth](https://developer.apple.com/videos/play/wwdc2016/411/)
-- [Creating Custom Instruments](https://developer.apple.com/videos/play/wwdc2018/410/)
+- [Profiling in Depth](https://wwdctogether.com/wwdc2015/412)
+- [Using Time Profiler in Instruments](https://wwdctogether.com/wwdc2016/418/)
+- [System Trace in Depth](https://wwdctogether.com/wwdc2016/411/)
+- [Creating Custom Instruments](https://wwdctogether.com/wwdc2018/410/)
 
 [instruments]: https://help.apple.com/instruments/mac/10.0/
 [time profiler]: https://help.apple.com/instruments/mac/10.0/#/dev44b2b437
