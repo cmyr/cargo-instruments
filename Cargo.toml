@@ -1,6 +1,6 @@
 [package]
 name = "cargo-instruments"
-version = "0.4.12"
+version = "0.4.13"
 authors = ["Colin Rofls <colin@cmyr.net>"]
 license = "MIT"
 description = "Profile binary targets on macOS using Xcode Instruments."
@@ -16,7 +16,7 @@ vendored-openssl = ["cargo/vendored-openssl"]
 
 [dependencies]
 anyhow = "1.0"
-cargo = "0.88"
+cargo = "0.91"
 chrono = "0.4.6"
 structopt = { version = "^0.3", default-features = false }
 semver = "1.0"
