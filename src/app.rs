@@ -172,10 +172,10 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
 /// This additionally filters options based on user args, so that Cargo
 /// builds as little as possible.
 fn make_compile_opts(cargo_options: &CargoOpts, cfg: &GlobalContext) -> Result<CompileOptions> {
-    use cargo::core::compiler::CompileMode;
+    use cargo::core::compiler::UserIntent;
     use cargo::ops::CompileFilter;
 
-    let mut compile_options = CompileOptions::new(cfg, CompileMode::Build)?;
+    let mut compile_options = CompileOptions::new(cfg, UserIntent::Build)?;
     let profile = &cargo_options.profile;
 
     compile_options.build_config.requested_profile = InternedString::new(profile);
