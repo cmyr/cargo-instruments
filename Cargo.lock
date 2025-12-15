@@ -34,11 +34,12 @@ dependencies = [
 
 [[package]]
 name = "annotate-snippets"
-version = "0.11.5"
+version = "0.12.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "710e8eae58854cdc1790fcb56cca04d712a17be849eeb81da2a724bf4bae2bc4"
+checksum = "15580ece6ea97cbf832d60ba19c021113469480852c6a2a6beb0db28f097bf1f"
 dependencies = [
  "anstyle",
+ "memchr",
  "unicode-width 0.2.2",
 ]
 
@@ -214,9 +215,9 @@ checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
 name = "cargo"
-version = "0.91.0"
+version = "0.93.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f46c7f53180bf46c220e2af1ceff951e2ce088184fa9009ad6915efee25915d"
+checksum = "2a9eb357bdc58680a9d65ec020f0ec258d89a70c96d491b39606fb86a42c0dd5"
 dependencies = [
  "annotate-snippets",
  "anstream",
@@ -292,7 +293,8 @@ dependencies = [
  "unicode-xid",
  "url",
  "walkdir",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.1",
+ "winnow",
 ]
 
 [[package]]
@@ -312,9 +314,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-credential-libsecret"
-version = "0.5.1"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bad275302dfd55e54dcd555c7129cd76a4b4d7236c6a779370683014cba0a90"
+checksum = "67e287f3cc9732b9a7eb5140e9501ec6557bdcdc83366a424993e4d4db228c4a"
 dependencies = [
  "anyhow",
  "cargo-credential",
@@ -323,9 +325,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-credential-macos-keychain"
-version = "0.4.16"
+version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9f95d842bd047476c65e1d4a5f681f1d158f8c784edfc4ae245a2430ca09f02"
+checksum = "806cb58d7644f7c4f8c8e47af5f7f2dc4e10f0ce205f0416e8fdc6d58c7efaf2"
 dependencies = [
  "cargo-credential",
  "security-framework",
@@ -333,12 +335,12 @@ dependencies = [
 
 [[package]]
 name = "cargo-credential-wincred"
-version = "0.4.16"
+version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c238839b7d5e5b62836277b4c83c9ed17d9ca7334b298c814c223b2e691ff76"
+checksum = "a12eac22936a44d4be4765ffb9a29cbd69faab267a637c578feef62f8cc96c39"
 dependencies = [
  "cargo-credential",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.1",
 ]
 
 [[package]]
@@ -365,9 +367,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-util"
-version = "0.2.23"
+version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fbac95faac578313b0ba60f9a5594a97cae42692f23b133ecd17615dedca50e"
+checksum = "03ae3fc62640c9e0235c95b07e68a59a31919d7331bd95961cc811bc0607c87b"
 dependencies = [
  "anyhow",
  "core-foundation",
@@ -383,14 +385,14 @@ dependencies = [
  "tempfile",
  "tracing",
  "walkdir",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.1",
 ]
 
 [[package]]
 name = "cargo-util-schemas"
-version = "0.10.0"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b45c9672203db3caf908423f25bc31f3b6a814a9d22f2380048236498a312e75"
+checksum = "f714efe9b56ea4bed06b499396e77b68db663a55b16dc3f144d5a5a0dc19788c"
 dependencies = [
  "semver",
  "serde",
@@ -556,9 +558,9 @@ dependencies = [
 
 [[package]]
 name = "crates-io"
-version = "0.40.13"
+version = "0.40.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1986712716d18d860258fdbd03fd9d9e20f1ffb974d8a203816c58b68c6b9012"
+checksum = "62451b814867f57f25e941eeb22b55ada9d93308cb65578ec57e35e414091019"
 dependencies = [
  "curl",
  "percent-encoding",
@@ -2310,9 +2312,9 @@ dependencies = [
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.34.0"
+version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91632f3b4fb6bd1d72aa3d78f41ffecfcf2b1a6648d8c241dbe7dbfaf4875e15"
+checksum = "133c182a6a2c87864fe97778797e46c7e999672690dc9fa3ee8e241aa4a9c13f"
 dependencies = [
  "cc",
  "pkg-config",
@@ -2916,9 +2918,9 @@ dependencies = [
 
 [[package]]
 name = "rusqlite"
-version = "0.36.0"
+version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3de23c3319433716cf134eed225fe9986bc24f63bed9be9f20c329029e672dc7"
+checksum = "165ca6e57b20e1351573e3729b958bc62f0e48025386970b6e4d29e7a7e71f3f"
 dependencies = [
  "bitflags 2.9.4",
  "fallible-iterator",
