@@ -20,5 +20,5 @@ cargo = "0.93"
 chrono = "0.4.6"
 structopt = { version = "^0.3", default-features = false }
 semver = "1.0"
-env_logger = "0.11.0"
+env_logger = "0.11.10"
 log = "0.4.20"
