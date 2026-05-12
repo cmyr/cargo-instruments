@@ -104,6 +104,10 @@ pub(crate) struct AppConfig {
     #[arg(long, display_order = 1001)]
     pub(crate) no_default_features: bool,
 
+    /// Do not demangle Rust symbols in the profiling output.
+    #[structopt(long, display_order = 1001)]
+    pub(crate) no_demangle: bool,
+
     /// Arguments passed to the target binary.
     ///
     /// To pass flags, precede child args with `--`,
