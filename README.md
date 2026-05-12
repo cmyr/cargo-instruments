@@ -17,10 +17,23 @@ This crate only works on macOS because it uses [Instruments] for profiling
 and creating the trace file. The benefit is that Instruments provides great
 templates and UI to explore the Profiling Trace.
 
-To install Xcode Instruments, simply install the Command Line Tools:
+To install Instruments, install Xcode from the App Store.  (The Command Line Tools
+you might have already installed while setting up Rust are not sufficient.)
+
+Verify that install by running `xctrace`.  It should print help output.
+
+If you see an error about the active developer directory, check the path
+printed by `xcode-select --print-path`.  It should look as follows:
 
 ```sh
-$ xcode-select --install
+$ xcode-select --print-path
+/Applications/Xcode.app/Contents/Developer
+```
+
+If not, this command will reset the path:
+
+```sh
+$ sudo xcode-select --reset
 ```
 
 ### Compatibility
