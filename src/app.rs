@@ -11,6 +11,7 @@ use cargo::{
     util::{important_paths, interning::InternedString},
 };
 
+use crate::demangle;
 use crate::instruments;
 use crate::opt::{AppConfig, CargoOpts, Target};
 
@@ -28,7 +29,20 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
     }
 
     // 3. Build the specified target
-    let cargo_config = GlobalContext::default()?;
+    let cargo_options = app_config.to_cargo_opts()?;
+
+    let mut cargo_config = GlobalContext::default()?;
+    cargo_config.configure(
+        0,
+        false,
+        None,
+        false,
+        false,
+        false,
+        &None,
+        &[],
+        &[format!("profile.{}.split-debuginfo='packed'", cargo_options.profile)],
+    )?;
 
     let manifest_path = match app_config.manifest_path.as_ref() {
         Some(path) if path.is_absolute() => Ok(path.to_owned()),
@@ -49,8 +63,6 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
             .warn("--open is now the default behaviour, and will be ignored.")?;
     }
 
-    let cargo_options = app_config.to_cargo_opts()?;
-
     log::debug!("building profile target {}", cargo_options.target);
     let target_filepath = match build_target(&cargo_options, &workspace) {
         Ok(path) => path,
@@ -60,11 +72,23 @@ pub(crate) fn run(app_config: AppConfig) -> Result<()> {
         }
     };
 
-    log::debug!("running against target {}", target_filepath.display());
+    if !app_config.no_demangle {
+        if let Err(e) = demangle::demangle_binary(&target_filepath) {
+            workspace.gctx().shell().warn(format!(
+                "failed to demangle symbols: {e:#}\n\
+                 Note: symbol demangling is experimental. If you see this message, \
+                 please open an issue at https://github.com/cmyr/cargo-instruments/issues \
+                 including your macOS and Xcode versions."
+            ))?;
+        }
+    } else {
+        demangle::just_invalidate_symbol_cache(&target_filepath);
+    }
 
     #[cfg(target_arch = "aarch64")]
     codesign(&target_filepath, &workspace)?;
 
+    log::debug!("running against target {}", target_filepath.display());
     // 4. Profile the built target, will display menu if no template was selected
     let trace_filepath =
         match instruments::profile_target(&target_filepath, &xctrace_tool, &app_config, &workspace)

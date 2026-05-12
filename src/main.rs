@@ -1,4 +1,5 @@
 mod app;
+mod demangle;
 mod instruments;
 mod opt;
 
