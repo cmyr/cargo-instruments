@@ -195,7 +195,20 @@ fn parse_uuid(data: &[u8]) -> Option<String> {
 }
 
 fn format_uuid(bytes: &[u8; 16]) -> String {
-    bytes.iter().map(|b| format!("{b:02X}")).collect()
+    use std::fmt::Write;
+    let write_bytes = |s: &mut String, bytes, suffix| {
+        for b in bytes {
+            write!(s, "{b:02X}").unwrap()
+        }
+        s.push_str(suffix)
+    };
+    let mut out = String::new();
+    write_bytes(&mut out, &bytes[0..4], "-");
+    write_bytes(&mut out, &bytes[4..6], "-");
+    write_bytes(&mut out, &bytes[6..8], "-");
+    write_bytes(&mut out, &bytes[8..10], "-");
+    write_bytes(&mut out, &bytes[10..16], "");
+    out
 }
 
 /// Invalidate the `coresymbolicationd` symbol cache for a given UUID.
@@ -248,5 +261,14 @@ mod tests {
             after.contains("demangle::demangle_region"),
             "expected demangled symbol 'demangle::demangle_region', got:\n{after}"
         );
+    }
+
+    #[test]
+    fn format_uuid_inserts_hyphens() {
+        let bytes: [u8; 16] = [
+            0x55, 0x0E, 0x84, 0x00, 0xE2, 0x9B, 0x41, 0xD4, 0xA7, 0x16, 0x44, 0x66, 0x55, 0x44,
+            0x00, 0x00,
+        ];
+        assert_eq!(format_uuid(&bytes), "550E8400-E29B-41D4-A716-446655440000");
     }
 }
