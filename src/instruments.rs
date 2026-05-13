@@ -405,6 +405,7 @@ fn resolve_template_name(template_name: &str) -> &str {
         "alloc" => "Allocations",
         "io" => "File Activity",
         "sys" => "System Trace",
+        "cpu" => "CPU Profiler",
         other => other,
     }
 }
@@ -416,6 +417,7 @@ fn abbrev_name(template_name: &str) -> Option<&str> {
         "Allocations" => Some("alloc"),
         "File Activity" => Some("io"),
         "System Trace" => Some("sys"),
+        "CPU Profiler" => Some("cpu"),
         _ => None,
     }
 }
