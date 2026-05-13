@@ -7,8 +7,8 @@ compile_error!("cargo-instruments requires macOS.");
 
 fn main() {
     env_logger::init();
-    use structopt::StructOpt;
-    let opt::Cli::Instruments(args) = opt::Cli::from_args();
+    use clap::Parser;
+    let opt::Cli::Instruments(args) = opt::Cli::parse();
 
     if let Err(e) = app::run(args) {
         eprintln!("{}", e);

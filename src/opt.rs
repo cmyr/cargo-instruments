@@ -3,65 +3,65 @@
 use anyhow::Result;
 use cargo::core::resolver::CliFeatures;
 use cargo::ops::Packages;
+use clap::Parser;
 use std::fmt;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
-#[derive(StructOpt)]
-#[structopt(bin_name = "cargo")]
+#[derive(Parser)]
+#[command(bin_name = "cargo")]
 pub(crate) enum Cli {
     /// Profile a binary with Xcode Instruments.
     ///
     /// By default, cargo-instruments will build your main binary.
-    #[structopt(
+    #[command(
         name = "instruments",
         after_help = "EXAMPLE:\n    cargo instruments -t time    Profile main binary with the (recommended) Time Profiler."
     )]
     Instruments(AppConfig),
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
+#[derive(Debug, Parser)]
+#[command(trailing_var_arg = true)]
 pub(crate) struct AppConfig {
     /// List available templates
-    #[structopt(short = "l", long)]
+    #[arg(short = 'l', long)]
     pub(crate) list_templates: bool,
 
     /// Specify the instruments template to run
     ///
     /// To see available templates, pass `--list-templates`.
-    #[structopt(
-        short = "t",
+    #[arg(
+        short = 't',
         long = "template",
         value_name = "TEMPLATE",
-        required_unless = "list-templates"
+        required_unless_present = "list_templates"
     )]
     pub(crate) template_name: Option<String>,
 
     /// Specify package for example/bin/bench
     ///
     /// For package that has only one bin, it's the same as `--bin PACKAGE_NAME`
-    #[structopt(short = "p", long, value_name = "NAME")]
+    #[arg(short = 'p', long, value_name = "NAME")]
     package: Option<String>,
 
     /// Example binary to run
-    #[structopt(long, group = "target", value_name = "NAME")]
+    #[arg(long, group = "target", value_name = "NAME")]
     example: Option<String>,
 
     /// Binary to run
-    #[structopt(long, group = "target", value_name = "NAME")]
+    #[arg(long, group = "target", value_name = "NAME")]
     bin: Option<String>,
 
     /// Benchmark target to run
-    #[structopt(long, group = "target", value_name = "NAME")]
+    #[arg(long, group = "target", value_name = "NAME")]
     bench: Option<String>,
 
     /// Pass --release to cargo
-    #[structopt(long, conflicts_with = "profile")]
+    #[arg(long, conflicts_with = "profile")]
     release: bool,
 
     /// Pass --profile NAME to cargo
-    #[structopt(long, value_name = "NAME")]
+    #[arg(long, value_name = "NAME")]
     profile: Option<String>,
 
     /// Output .trace file to the given path
@@ -69,46 +69,46 @@ pub(crate) struct AppConfig {
     /// Defaults to `target/instruments/{name}_{template-name}_{date}.trace`.
     ///
     /// If the file already exists, a new Run will be added.
-    #[structopt(short = "o", long = "output", value_name = "PATH", parse(from_os_str))]
+    #[arg(short = 'o', long = "output", value_name = "PATH")]
     pub(crate) trace_filepath: Option<PathBuf>,
 
     /// Limit recording time to the specified value (in milliseconds)
     ///
     /// The program will be terminated after this limit is exceeded.
-    #[structopt(long, value_name = "MILLIS")]
+    #[arg(long, value_name = "MILLIS")]
     pub(crate) time_limit: Option<usize>,
 
     /// Open the generated .trace file after profiling
     ///
     /// The trace file will open in Xcode Instruments.
-    #[structopt(long, hidden = true)]
+    #[arg(long, hide = true)]
     pub(crate) open: bool,
 
     /// Do not open the generated trace file in Instruments.app.
-    #[structopt(long)]
+    #[arg(long)]
     pub(crate) no_open: bool,
 
     /// Features to pass to cargo.
-    #[structopt(long, value_name = "CARGO-FEATURES")]
+    #[arg(long, value_name = "CARGO-FEATURES")]
     pub(crate) features: Option<String>,
 
     /// Path to Cargo.toml
-    #[structopt(long, value_name = "PATH")]
+    #[arg(long, value_name = "PATH")]
     pub(crate) manifest_path: Option<PathBuf>,
 
     /// Activate all features for the selected target.
-    #[structopt(long, display_order = 1001)]
+    #[arg(long, display_order = 1001)]
     pub(crate) all_features: bool,
 
     /// Do not activate the default features for the selected target
-    #[structopt(long, display_order = 1001)]
+    #[arg(long, display_order = 1001)]
     pub(crate) no_default_features: bool,
 
     /// Arguments passed to the target binary.
     ///
     /// To pass flags, precede child args with `--`,
     /// e.g. `cargo instruments -- -t test1.txt --slow-mode`.
-    #[structopt(value_name = "ARGS")]
+    #[arg(value_name = "ARGS")]
     pub(crate) target_args: Vec<String>,
 }
 
@@ -212,7 +212,7 @@ mod tests {
 
     #[test]
     fn defaults() {
-        let opts = AppConfig::from_iter(&["instruments", "-t", "template"]);
+        let opts = AppConfig::parse_from(["instruments", "-t", "template"]);
         assert!(opts.example.is_none());
         assert!(opts.bin.is_none());
         assert!(!opts.release);
@@ -224,13 +224,13 @@ mod tests {
     #[test]
     fn package_is_given() {
         let opts =
-            AppConfig::from_iter(&["instruments", "--package", "foo", "--template", "alloc"]);
+            AppConfig::parse_from(["instruments", "--package", "foo", "--template", "alloc"]);
         assert!(opts.example.is_none());
         assert!(opts.bin.is_none());
         assert!(opts.bench.is_none());
         assert_eq!(opts.package.unwrap().as_str(), "foo");
 
-        let opts = AppConfig::from_iter(&[
+        let opts = AppConfig::parse_from([
             "instruments",
             "--package",
             "foo",
@@ -246,17 +246,17 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "cannot be used with one or more of the other")]
+    #[should_panic(expected = "ArgumentConflict")]
     fn group_is_exclusive() {
-        let opts = AppConfig::from_iter(&["instruments", "-t", "time", "--bin", "bin_arg"]);
+        let opts = AppConfig::parse_from(["instruments", "-t", "time", "--bin", "bin_arg"]);
         assert!(opts.example.is_none());
         assert_eq!(opts.bin.unwrap().as_str(), "bin_arg");
 
         let opts =
-            AppConfig::from_iter(&["instruments", "-t", "time", "--example", "example_binary"]);
+            AppConfig::parse_from(["instruments", "-t", "time", "--example", "example_binary"]);
         assert!(opts.bin.is_none());
         assert_eq!(opts.example.unwrap().as_str(), "example_binary");
-        let _opts = AppConfig::from_iter_safe(&[
+        let _opts = AppConfig::try_parse_from([
             "instruments",
             "-t",
             "time",
@@ -270,11 +270,11 @@ mod tests {
 
     #[test]
     fn limit_millis() {
-        let opts = AppConfig::from_iter(&["instruments", "-t", "time", "--time-limit", "42000"]);
+        let opts = AppConfig::parse_from(["instruments", "-t", "time", "--time-limit", "42000"]);
         assert_eq!(opts.time_limit, Some(42000));
-        let opts = AppConfig::from_iter(&["instruments", "-t", "time", "--time-limit", "808"]);
+        let opts = AppConfig::parse_from(["instruments", "-t", "time", "--time-limit", "808"]);
         assert_eq!(opts.time_limit, Some(808));
-        let opts = AppConfig::from_iter(&["instruments", "-t", "time"]);
+        let opts = AppConfig::parse_from(["instruments", "-t", "time"]);
         assert_eq!(opts.time_limit, None);
     }
 
@@ -291,7 +291,7 @@ mod tests {
             "--",
             "hi",
         ];
-        let opts = AppConfig::from_iter(opts);
+        let opts = AppConfig::parse_from(opts);
         assert_eq!(opts.template_name, Some("time".into()));
         assert_eq!(opts.example, Some("hello".to_string()));
         assert_eq!(opts.features, Some("svg im".to_string()));
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn var_args() {
-        let opts = AppConfig::from_iter(&[
+        let opts = AppConfig::parse_from([
             "instruments",
             "-t",
             "alloc",
@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn manifest_path() {
-        let opts = AppConfig::from_iter(&[
+        let opts = AppConfig::parse_from([
             "instruments",
             "--manifest-path",
             "/path/to/Cargo.toml",
