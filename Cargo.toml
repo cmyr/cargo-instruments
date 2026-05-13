@@ -9,7 +9,7 @@ documentation = "https://github.com/cmyr/cargo-instruments"
 categories = ["development-tools::cargo-plugins", "development-tools::profiling"]
 keywords = ["profiling", "xcode", "cargo-subcommand", "trace", "macos"]
 readme = "README.md"
-edition = "2021"
+edition = "2024"
 
 [features]
 vendored-openssl = ["cargo/vendored-openssl"]

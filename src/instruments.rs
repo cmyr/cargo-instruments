@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use cargo::core::Workspace;
 use semver::Version;
 
