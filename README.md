@@ -6,8 +6,8 @@ Easily profile your rust crate with Xcode [Instruments].
 suite. It allows you to easily profile any binary in your crate, generating
 files that can be viewed in the Instruments app.
 
-![Instruments Time Profiler](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_time1.png)
-![Instruments System Trace](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_sys1.png)
+![Instruments Time Profiler](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_time2.png)
+![Instruments System Trace](https://raw.githubusercontent.com/cmyr/cargo-instruments/screenshots/instruments_sys2.png)
 
 ## Pre-requisites
 
@@ -141,37 +141,37 @@ debug = true
 As usual, thanks to Clap, running `cargo instruments -h` prints the compact help.
 
 ```
-cargo-instruments 0.4.8
 Profile a binary with Xcode Instruments.
 
 By default, cargo-instruments will build your main binary.
 
-USAGE:
-    cargo instruments [FLAGS] [OPTIONS] --template <TEMPLATE> [ARGS]...
+Usage: cargo instruments [OPTIONS] [ARGS]...
 
-FLAGS:
-    -h, --help                   Prints help information
-    -l, --list-templates         List available templates
-        --no-open                Do not open the generated trace file in Instruments.app
-        --release                Pass --release to cargo
-    -V, --version                Prints version information
-        --all-features           Activate all features for the selected target
-        --no-default-features    Do not activate the default features for the selected target
+Arguments:
+  [ARGS]...
+          Arguments passed to the target binary.
 
-OPTIONS:
-        --bench <NAME>                 Benchmark target to run
-        --bin <NAME>                   Binary to run
-        --example <NAME>               Example binary to run
-        --features <CARGO-FEATURES>    Features to pass to cargo
-        --manifest-path <PATH>         Path to Cargo.toml
-    -p, --package <NAME>               Specify package for example/bin/bench
-        --profile <NAME>               Pass --profile NAME to cargo
-    -t, --template <TEMPLATE>          Specify the instruments template to run
-        --time-limit <MILLIS>          Limit recording time to the specified value (in milliseconds)
-    -o, --output <PATH>                Output .trace file to the given path
+          To pass flags, precede child args with `--`,
+          e.g. `cargo instruments -- -t test1.txt --slow-mode`.
 
-ARGS:
-    <ARGS>...    Arguments passed to the target binary
+Options:
+  -l, --list-templates             List available templates
+  -t, --template <TEMPLATE>        Specify the instruments template to run
+  -p, --package <NAME>             Specify package for example/bin/bench
+      --example <NAME>             Example binary to run
+      --bin <NAME>                 Binary to run
+      --bench <NAME>               Benchmark target to run
+      --release                    Pass --release to cargo
+      --profile <NAME>             Pass --profile NAME to cargo
+  -o, --output <PATH>              Output .trace file to the given path
+      --time-limit <MILLIS>        Limit recording time to the specified value (in milliseconds)
+      --no-open                    Do not open the generated trace file in Instruments.app
+      --features <CARGO-FEATURES>  Features to pass to cargo
+      --manifest-path <PATH>       Path to Cargo.toml
+  -h, --help                       Print help (see a summary with '-h')
+      --all-features               Activate all features for the selected target
+      --no-default-features        Do not activate the default features for the selected target
+      --no-demangle                Do not demangle Rust symbols in the profiling output
 
 EXAMPLE:
     cargo instruments -t time    Profile main binary with the (recommended) Time Profiler.
@@ -188,26 +188,33 @@ template name, you will be prompted to choose one.
 
 Typically, the built-in templates are
 
-    built-in            abbrev
-    --------------------------
+    built-in                   abbrev
+    ---------------------------------
     Activity Monitor
-    Allocations         (alloc)
+    Allocations                (alloc)
     Animation Hitches
     App Launch
-    Core Data
-    Counters
-    Energy Log
-    File Activity       (io)
+    Audio System Trace
+    CPU Counters
+    CPU Profiler               (cpu)
+    Core ML
+    Data Persistence
+    File Activity              (io)
+    Game Memory
     Game Performance
+    Game Performance Overview
     Leaks
     Logging
     Metal System Trace
     Network
-    SceneKit
+    Power Profiler
+    Processor Trace
+    RealityKit Trace
+    Swift Concurrency
     SwiftUI
-    System Trace        (sys)
-    Time Profiler       (time)
-    Zombies
+    System Trace               (sys)
+    Tailspin
+    Time Profiler              (time)
 
 ### Examples
 
@@ -234,17 +241,20 @@ $ cargo instruments -t Allocations --example my_example --time-limit 10000 --ope
 
 ## Resources
 
-[Instruments Help][instruments]
+[Instruments Help Topics][instruments]
 
 ### WWDC videos
 
 The best source of information about Instruments is likely the various WWDC
 sessions over the years:
 
-- [Profiling in Depth](https://wwdctogether.com/wwdc2015/412)
-- [Using Time Profiler in Instruments](https://wwdctogether.com/wwdc2016/418/)
-- [System Trace in Depth](https://wwdctogether.com/wwdc2016/411/)
-- [Creating Custom Instruments](https://wwdctogether.com/wwdc2018/410/)
+- [Getting Started with Instruments](https://developer.apple.com/videos/play/wwdc2019/411/)
+- [Developing a Great Profiling Experience](https://developer.apple.com/videos/play/wwdc2019/414/)
+- [Visualize and Optimize Swift Concurrency](https://developer.apple.com/videos/play/wwdc2022/110350/)
+- [Track Down Hangs with Xcode and On-Device Detection](https://developer.apple.com/videos/play/wwdc2022/10082/)
+- [Analyze Hangs with Instruments](https://developer.apple.com/videos/play/wwdc2023/10248/)
+- [Analyze Heap Memory](https://developer.apple.com/videos/play/wwdc2024/10173/)
+- [Optimize CPU Performance with Instruments](https://developer.apple.com/videos/play/wwdc2025/308/)
+- [Optimize SwiftUI Performance with Instruments](https://developer.apple.com/videos/play/wwdc2025/306/)
 
-[instruments]: https://help.apple.com/instruments/mac/10.0/
-[time profiler]: https://help.apple.com/instruments/mac/10.0/#/dev44b2b437
+[instruments]: https://developer.apple.com/tutorials/instruments
