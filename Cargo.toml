@@ -21,6 +21,6 @@ chrono = "0.4.6"
 clap = { version = "4", features = ["derive"] }
 semver = "1.0"
 env_logger = "0.11.0"
-log = "0.4.20"
+log = "0.4.30"
 object = { version = "0.39", default-features = false, features = ["read_core", "macho"] }
 rustc-demangle = "0.1"
