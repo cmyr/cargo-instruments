@@ -163,7 +163,7 @@ fn codesign(path: &Path, workspace: &Workspace) -> Result<()> {
 /// Attempts to validate and build the specified target. On success, returns
 /// the path to the built executable.
 fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<PathBuf> {
-    use cargo::core::shell::Verbosity;
+    use cargo_util_terminal::Verbosity;
     workspace.gctx().shell().set_verbosity(Verbosity::Normal);
 
     let compile_options = make_compile_opts(cargo_options, workspace.gctx())?;
