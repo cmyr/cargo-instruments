@@ -9,7 +9,7 @@ jobs:
     runs-on: macOS-latest
     name: rustfmt
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: install stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -23,7 +23,7 @@ jobs:
     runs-on: macOS-latest
     name: cargo test stable
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: install stable toolchain
         uses: dtolnay/rust-toolchain@stable
