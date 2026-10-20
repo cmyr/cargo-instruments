@@ -1,8 +1,8 @@
 //! CLI argument handling
 
 use anyhow::Result;
-use cargo::core::resolver::CliFeatures;
 use cargo::ops::Packages;
+use cargo::resolver::CliFeatures;
 use clap::Parser;
 use std::fmt;
 use std::path::PathBuf;

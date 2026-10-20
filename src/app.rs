@@ -6,9 +6,9 @@ use std::process::Command;
 use anyhow::{Result, anyhow};
 use cargo::GlobalContext;
 use cargo::{
-    core::Workspace,
     ops::CompileOptions,
     util::{important_paths, interning::InternedString},
+    workspace::Workspace,
 };
 
 use crate::demangle;
@@ -196,7 +196,7 @@ fn build_target(cargo_options: &CargoOpts, workspace: &Workspace) -> Result<Path
 /// This additionally filters options based on user args, so that Cargo
 /// builds as little as possible.
 fn make_compile_opts(cargo_options: &CargoOpts, cfg: &GlobalContext) -> Result<CompileOptions> {
-    use cargo::core::compiler::UserIntent;
+    use cargo::compiler::UserIntent;
     use cargo::ops::CompileFilter;
 
     let mut compile_options = CompileOptions::new(cfg, UserIntent::Build)?;

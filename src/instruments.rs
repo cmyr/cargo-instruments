@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use anyhow::{Result, anyhow};
-use cargo::core::Workspace;
+use cargo::workspace::Workspace;
 use semver::Version;
 
 use crate::opt::AppConfig;
