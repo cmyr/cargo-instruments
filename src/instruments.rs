@@ -379,7 +379,7 @@ fn prepare_trace_filepath(
 
     if !trace_dir.exists() {
         fs::create_dir_all(&trace_dir)
-            .map_err(|e| anyhow!("failed to create {:?}: {}", &trace_dir, e))?;
+            .map_err(|e| anyhow!("failed to create {:?}: {}", trace_dir, e))?;
     }
 
     let trace_filename = {
