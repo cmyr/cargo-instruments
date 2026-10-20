@@ -104,7 +104,10 @@ fn demangle_region(data: &mut [u8], region: Range<usize>) -> usize {
         let available = nul - pos;
         if let Ok(name) = name {
             let demangled = format!("{:#}", rustc_demangle::demangle(name));
-            if demangled != name && demangled.len() <= available {
+            // v0 mangled names can be shorter than their demangled form, since
+            // repeated paths are encoded as backreferences
+            let demangled = shorten(demangled, available);
+            if let Some(demangled) = demangled.filter(|demangled| demangled != name) {
                 data[pos..pos + demangled.len()].copy_from_slice(demangled.as_bytes());
                 data[pos + demangled.len()] = 0;
                 count += 1;
@@ -115,6 +118,155 @@ fn demangle_region(data: &mut [u8], region: Range<usize>) -> usize {
     }
 
     count
+}
+
+/// Generic arguments shorter than this are never replaced by [`shorten`].
+const MIN_ERASED_ARG_LEN: usize = 8;
+
+/// Shorten a demangled name to at most `max_len` bytes, if possible.
+///
+/// Each step is lossier than the last, and is only taken if the name is still
+/// too long: first the largest generic arguments are replaced with `_`, one at
+/// a time; then the inner segments of each path are elided; and finally each
+/// path is reduced to its last segment.
+fn shorten(mut name: String, max_len: usize) -> Option<String> {
+    while name.len() > max_len {
+        let Some(arg) = generic_args(&name)
+            .into_iter()
+            .filter(|arg| arg.len() >= MIN_ERASED_ARG_LEN)
+            .max_by_key(|arg| arg.len())
+        else {
+            break;
+        };
+        name.replace_range(arg, "_");
+    }
+    if name.len() <= max_len {
+        return Some(name);
+    }
+
+    [1, 0].into_iter().map(|keep_first| elide_paths(&name, keep_first)).find(|n| n.len() <= max_len)
+}
+
+/// Return the byte range of each generic argument in a demangled name.
+///
+/// This includes arguments nested inside other arguments.
+fn generic_args(name: &str) -> Vec<Range<usize>> {
+    let bytes = name.as_bytes();
+    let mut args = Vec::new();
+    // one entry per open bracket, holding the start of the current argument
+    // if that bracket opened a list of generic arguments
+    let mut open: Vec<Option<usize>> = Vec::new();
+
+    for (i, &b) in bytes.iter().enumerate() {
+        match b {
+            // a `<` directly after a path opens a list of generic arguments,
+            // as in `Vec<u8>` or `size_of::<u8>`; otherwise it starts a
+            // qualified path, as in `<Vec<u8> as Clone>::clone`
+            b'<' => {
+                let prev = i.checked_sub(1).map(|j| bytes[j]);
+                let follows_path = prev.is_some_and(|prev| {
+                    prev.is_ascii_alphanumeric() || !prev.is_ascii() || matches!(prev, b'_' | b':')
+                });
+                open.push(follows_path.then_some(i + 1));
+            }
+            b'(' | b'[' | b'{' => open.push(None),
+            // the arrow in `fn() -> T`
+            b'>' if i > 0 && bytes[i - 1] == b'-' => (),
+            b'>' | b')' | b']' | b'}' => {
+                if let Some(Some(start)) = open.pop() {
+                    args.push(start..i);
+                }
+            }
+            b',' => {
+                if let Some(Some(start)) = open.last_mut() {
+                    args.push(*start..i);
+                    *start = if bytes.get(i + 1) == Some(&b' ') { i + 2 } else { i + 1 };
+                }
+            }
+            _ => (),
+        }
+    }
+    args
+}
+
+/// Shorten paths in a demangled name by eliding their inner segments.
+///
+/// Each path keeps its first `keep_first` segments and its last one, and the
+/// segments in between are replaced with `..`. With a `keep_first` of 1,
+/// `core::iter::adapters::map::map_try_fold` becomes `core::..::map_try_fold`;
+/// with 0, it becomes `..::map_try_fold`.
+fn elide_paths(name: &str, keep_first: usize) -> String {
+    let mut out = String::with_capacity(name.len());
+    let mut rest = name;
+    while let Some(c) = rest.chars().next() {
+        let segments = path_segments(rest);
+        if segments.is_empty() {
+            out.push(c);
+            rest = &rest[c.len_utf8()..];
+            continue;
+        }
+
+        let path_len = segments.iter().map(|seg| seg.len() + 2).sum::<usize>() - 2;
+        // trailing segments like `{closure#0}` stay with the item they belong to
+        let keep_last = 1 + segments.iter().rev().take_while(|seg| seg.starts_with('{')).count();
+        if segments.len() > keep_first + keep_last {
+            for seg in &segments[..keep_first] {
+                out.push_str(seg);
+                out.push_str("::");
+            }
+            out.push_str("..::");
+            out.push_str(&segments[segments.len() - keep_last..].join("::"));
+        } else {
+            out.push_str(&rest[..path_len]);
+        }
+        rest = &rest[path_len..];
+    }
+    out
+}
+
+/// Return the segments of the `::`-separated path at the start of `s`.
+///
+/// The first segment must be an identifier; later segments may also be
+/// braced, like `{closure#0}`. Returns an empty vec if `s` does not start
+/// with an identifier.
+fn path_segments(s: &str) -> Vec<&str> {
+    fn ident_len(s: &str) -> usize {
+        s.find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(s.len())
+    }
+
+    fn braced_len(s: &str) -> usize {
+        let mut depth = 0;
+        for (i, c) in s.char_indices() {
+            match c {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return i + 1;
+                    }
+                }
+                _ => (),
+            }
+        }
+        0
+    }
+
+    let mut segments = Vec::new();
+    let mut len = ident_len(s);
+    if len == 0 {
+        return segments;
+    }
+    segments.push(&s[..len]);
+
+    while let Some(next) = s[len..].strip_prefix("::") {
+        let seg_len = if next.starts_with('{') { braced_len(next) } else { ident_len(next) };
+        if seg_len == 0 {
+            break;
+        }
+        segments.push(&next[..seg_len]);
+        len += 2 + seg_len;
+    }
+    segments
 }
 
 /// Extract the string regions and UUID from a Mach-O binary's load commands.
@@ -245,7 +397,11 @@ mod tests {
         // verify mangled symbols exist and demangled ones don't
         let before = Command::new("nm").arg("--no-demangle").arg(&bin).output().unwrap();
         let before = String::from_utf8_lossy(&before.stdout);
-        assert!(before.contains("_ZN"), "expected mangled symbols in binary");
+        // rustc may use either the legacy (`_ZN`) or v0 (`_R`) mangling scheme
+        assert!(
+            before.split_whitespace().any(|s| rustc_demangle::try_demangle(s).is_ok()),
+            "expected mangled symbols in binary"
+        );
         assert!(
             !before.contains("demangle::demangle_region"),
             "demangled symbol should not be present before patching"
@@ -261,6 +417,57 @@ mod tests {
             after.contains("demangle::demangle_region"),
             "expected demangled symbol 'demangle::demangle_region', got:\n{after}"
         );
+    }
+
+    #[test]
+    fn elide_long_paths() {
+        let name = "core::iter::adapters::map::map_try_fold::<u8>";
+        assert_eq!(elide_paths(name, 1), "core::..::map_try_fold::<u8>");
+        assert_eq!(elide_paths(name, 0), "..::map_try_fold::<u8>");
+        assert_eq!(
+            elide_paths("<core::slice::Iter<u8> as core::iter::Iterator>::next", 1),
+            "<core::..::Iter<u8> as core::..::Iterator>::next"
+        );
+        assert_eq!(
+            elide_paths("<a::b::E>::run::{closure#0}::{closure#1}", 1),
+            "<a::..::E>::run::{closure#0}::{closure#1}"
+        );
+        assert_eq!(elide_paths("a::b::c::{closure#0}", 1), "a::..::c::{closure#0}");
+    }
+
+    #[test]
+    fn elide_leaves_short_paths() {
+        let name = "<alloc::Vec<u8>>::get::<&[u8; 4]>";
+        assert_eq!(elide_paths(name, 1), name);
+    }
+
+    #[test]
+    fn find_generic_args() {
+        let name = "<Vec<u8> as Into<Box<[u8]>>>::into::<fn(u32) -> u8, ()>";
+        let args: Vec<_> = generic_args(name).into_iter().map(|arg| &name[arg]).collect();
+        assert_eq!(args, ["u8", "[u8]", "Box<[u8]>", "fn(u32) -> u8", "()"]);
+    }
+
+    #[test]
+    fn shorten_erases_largest_args_first() {
+        let name = "foo::<alloc::string::String, u8, core::option::Option<alloc::string::String>>";
+        assert_eq!(shorten(name.into(), name.len()).as_deref(), Some(name));
+        assert_eq!(
+            shorten(name.into(), 60).as_deref(),
+            Some("foo::<alloc::string::String, u8, _>")
+        );
+        assert_eq!(shorten(name.into(), 30).as_deref(), Some("foo::<_, u8, _>"));
+        assert_eq!(shorten(name.into(), 10), None);
+    }
+
+    #[test]
+    fn shorten_keeps_small_args() {
+        let name = "<alloc::vec::Vec<u8> as core::fmt::Debug>::fmt";
+        assert_eq!(
+            shorten(name.into(), 44).as_deref(),
+            Some("<alloc::..::Vec<u8> as core::..::Debug>::fmt")
+        );
+        assert_eq!(shorten(name.into(), 33).as_deref(), Some("<..::Vec<u8> as ..::Debug>::fmt"));
     }
 
     #[test]
