@@ -413,9 +413,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-util"
-version = "0.2.32"
+version = "0.2.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbe819082beae53247a2c440bece59bc2d1d90736cf5bed6b87f5e5bb53f0d30"
+checksum = "33ab36e328ebd4ef4b7cf9a4532018012caf9facfd28426a0d5683dce92aeb46"
 dependencies = [
  "anyhow",
  "core-foundation",
@@ -454,9 +454,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-util-terminal"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82be174c17e22a0366a1a0929e0306e0d53f120d159416b00f35e9708e7b2940"
+checksum = "2f9e4b9b1629251f42ca7774d39a94486e575bf6629cfc20d5e99a04663fb7bd"
 dependencies = [
  "annotate-snippets",
  "anstream",
